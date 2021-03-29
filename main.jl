@@ -1,12 +1,12 @@
 module M
 
-include("./src/Sourcerer.jl")
-using .Sourcerer
+include("./src/NixSourcerer.jl")
+using .NixSourcerer
 
 function main()
     # path = ARGS[1]
     path = "$(@__DIR__)"
-    Sourcerer.process_dir(path)
+    update(path)
 end
 
 end

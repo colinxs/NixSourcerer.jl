@@ -27,9 +27,10 @@ function format_entry(name, fetcher, fetcherargs, meta)
     return """
     $(strip(name)) = let
         fetcher = $fetcher;
+        fetcherName = $(quote_string(fetcher));
         fetcherArgs = $fetcherargs;
     in {
-        inherit fetcher fetcherArgs;
+        inherit fetcher fetcherName fetcherArgs;
         src = fetcher fetcherArgs;
         meta = $meta;
     };

@@ -1,7 +1,6 @@
-using NixSourcerer
-using Test
+include("preamble.jl")
 
 @testset "NixSourcerer.jl" begin
-    # Write your tests here.
+    include("file.jl")
 end
 

@@ -18,6 +18,9 @@ using GitCommand
 using Dates
 
 
+export update
+
+
 include("schema.jl")
 include("util.jl")
 include("nix.jl")
@@ -36,9 +39,9 @@ const HANDLERS = Dict(
     "git" => git_handler
 )
 
-function process_dir(dir)
-    tomlpath = joinpath(dir, "sources.toml")
-    nixpath = joinpath(dir, "sources.nix")
+function update(path)
+    tomlpath = joinpath(path, "Sources.toml")
+    nixpath = joinpath(path, "Sources.nix")
 
     if !isfile(tomlpath)
         error("$tomlpath does not exist!")

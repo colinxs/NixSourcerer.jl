@@ -1,17 +1,21 @@
-# [archive_nixpkgs]
-# type = "archive"
-# url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
-#
+[archive_nixpkgs]
+type = "archive"
+url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
+
 # [archive_builtin]
 # type = "archive"
 # url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
 # builtin = true
-
+#
 # [crate_version_builtin]
 # pname = "lscolors"
 # type = "crate"
 # version = "0.7.1"
 # builtin = true
+#
+# [file]
+# type = "file"
+# url = "https://julialang-s3.julialang.org/bin/versions.json"
 #
 # [crate_stable_builtin]
 # pname = "lscolors"
@@ -39,50 +43,45 @@
 # pname = "lscolors"
 # type = "crate"
 # version = "latest"
-
-# [file]
-# type = "file"
-# url = "https://julialang-s3.julialang.org/bin/versions.json"
-
-[github_rev]
-type = "github"
-owner = "nmattia"
-repo = "niv"
-rev = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
-
-[github_branch]
-type = "github"
-owner = "nmattia"
-repo = "niv"
-branch = "master"
-
-[github_tag]
-type = "github"
-owner = "nmattia"
-repo = "niv"
-tag = "v0.2.19"
-
-[github_release]
-type = "github"
-owner = "tree-sitter"
-repo = "tree-sitter-bash"
-release = "latest"
-
-[github_rev_submodule]
-type = "github"
-owner = "nmattia"
-repo = "niv"
-rev = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
-submodule = true
-
-[github_rev_builtin]
-type = "github"
-owner = "nmattia"
-repo = "niv"
-rev = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
-builtin = true
-
-
+#
+# [github_rev]
+# type = "github"
+# owner = "nmattia"
+# repo = "niv"
+# rev = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
+#
+# [github_branch]
+# type = "github"
+# owner = "nmattia"
+# repo = "niv"
+# branch = "master"
+#
+# [github_tag]
+# type = "github"
+# owner = "nmattia"
+# repo = "niv"
+# tag = "v0.2.19"
+#
+# [github_release]
+# type = "github"
+# owner = "tree-sitter"
+# repo = "tree-sitter-bash"
+# release = "latest"
+#
+# [github_rev_submodule]
+# type = "github"
+# owner = "nmattia"
+# repo = "niv"
+# rev = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
+# submodule = true
+#
+# [github_rev_builtin]
+# type = "github"
+# owner = "nmattia"
+# repo = "niv"
+# rev = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
+# builtin = true
+#
 # [git_branch]
 # type = "git"
 # url = "https://github.com/nmattia/niv.git"

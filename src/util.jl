@@ -2,6 +2,8 @@ function subset(d::AbstractDict, keys...)
     Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
 end
 
+quote_string(x::AbstractString) = "\"$(x)\""
+
 # function safemerge(x::AbstractDict, y::AbstractDict)
 #     for (k, v) in y
 #         if haskey(x, k) && x[k] != y[k]
