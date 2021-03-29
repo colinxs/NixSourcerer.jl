@@ -1,27 +1,27 @@
-module TestFile
+module TestArchive
 
 include("preamble.jl")
 
-@testset "file" begin
-    url = "https://julialang-s3.julialang.org/bin/versions.json"
-    sha256 = nix_file_sha256(download(url))
+@testset "archive" begin
+    url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
+    sha256 = with_unpack(nix_dir_sha256, download(url), strip = true)
     toml = Dict(
         "test1" => Dict(
-            "type" => "file",
+            "type" => "archive",
             "url" => url,
         ),
         "test2" => Dict(
-            "type" => "file",
+            "type" => "archive",
             "url" => url,
             "builtin" => true
         ),
     )
     truth = Dict(
-        "test1.fetcherName" => "pkgs.fetchurl", 
+        "test1.fetcherName" => "pkgs.fetchzip", 
         "test1.fetcherArgs.url" => url,
         "test1.fetcherArgs.sha256" => sha256,
         
-        "test2.fetcherName" => "builtins.fetchurl", 
+        "test2.fetcherName" => "builtins.fetchTarball", 
         "test2.fetcherArgs.url" => url,
         "test2.fetcherArgs.sha256" => sha256,
     )
@@ -29,3 +29,4 @@ include("preamble.jl")
 end
 
 end
+

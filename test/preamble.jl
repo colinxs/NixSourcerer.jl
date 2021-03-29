@@ -1,25 +1,45 @@
 using NixSourcerer
 using TOML
 using Downloads: download
+using Tar
+using GitCommand
+using p7zip_jll
 using Test
 
-
-function nix_file_sha256(path)
-    strip(read(`nix-hash --type sha256 --base32 --flat $path`, String))
+function rundebug(cmd::Cmd, stdout::Bool=false)
+    ioerr = IOBuffer()
+    cmd = pipeline(cmd, stderr=ioerr)
+    out = if stdout
+        read(cmd, String)
+    else
+        run(cmd)
+        nothing
+    end
+    @debug String(take!(ioerr))
+    return out
 end
 
-function nix_dir_hash(path)
-    strip(read(`nix-hash --type sha256 --base32 $path`, String))
+noall(cmd::Cmd) = pipeline(cmd, stdout=devnull, stderr=devnull)
+
+function nix_file_sha256(path)
+    strip(rundebug(`nix-hash --type sha256 --base32 --flat $path`, true))
+end
+
+function nix_dir_sha256(path)
+    strip(rundebug(`nix-hash --type sha256 --base32 $path`, true))
 end
 
 
 function nix_eval_source_attr(dir, attr)
     expr = "( (import $(dir)/Sources.nix {}).$(attr) )"
-    strip(read(`nix eval --raw $(expr)`, String))
+    strip(rundebug(`nix eval --raw $(expr)`, true))
 end
 
 function compare_source_attr(dir, truth, attr::AbstractString)
-    nix_eval_source_attr(dir, attr) == truth[attr]
+    value = nix_eval_source_attr(dir, attr) 
+    expected = truth[attr]
+    @debug "Comparing attr $attr" value expected
+    value == expected
 end
 
 function compare_source_attrs(dir, truth)
@@ -27,6 +47,55 @@ function compare_source_attrs(dir, truth)
         @test compare_source_attr(dir, truth, attr)
     end
 end
+
+
+function with_unpack(fn::Function, archive_path::AbstractString; strip::Bool = false)
+    mktempdir() do dst
+        if endswith(archive_path, ".zip")
+            rundebug(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`)
+        else
+            Tar.extract(`$(p7zip_jll.p7zip()) x $archive_path -so`, dst)
+        end
+        
+        if strip
+            paths = readdir(dst)
+            if length(paths) > 1
+                error("Archive must contain a single file or directory if strip==true")
+            else
+                onlydir = joinpath(dst, only(paths))
+                if isdir(onlydir)
+                    mktempdir() do stripdst
+                        for (root, _, files) in walkdir(onlydir)
+                            for file in files
+                                srcfile = joinpath(root, file)
+                                dstfile = joinpath(stripdst, relpath(joinpath(dst, root, srcfile), onlydir))
+                                mkpath(dirname(dstfile))
+                                cp(srcfile, dstfile)
+                            end
+                        end
+                    fn(stripdst)
+                    end
+                end
+            end
+        else
+            fn(dst)
+        end
+
+    end
+end
+
+function with_clone_and_checkout(fn, url, ref_or_rev; leave_git = false)
+    mktempdir() do dir
+        out = joinpath(dir, "out")
+        rundebug(`$(git()) clone $(url) $(out)`)
+        rundebug(`$(git()) -C $(out) checkout $(ref_or_rev)`)
+        if !leave_git
+            rm(joinpath(out, ".git"), recursive=true, force=true)
+        end
+        fn(out)
+    end
+end
+
 
 
 function with_update(fn::Function, toml::AbstractDict)
@@ -53,7 +122,6 @@ end
 #     for (ks, v) in entries
 #         x_cur = x
 #         while length(ks) > 1
-#             @info ks
 #             k, ks = Base.first(ks), Base.tail(ks)
 #             x_cur = x_cur[k] = Dict()
 #         end

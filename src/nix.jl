@@ -39,12 +39,12 @@ end
 
 function to_nix_value(x)
     expr = "(builtins.fromJSON \"$(escape_string(JSON.json(x)))\")"
-    strip(read(`nix eval "$expr"`, String))
+    strip(rundebug(`nix eval "$expr"`, true))
 end
 to_nix_value(x::String) = strip(x)
 
 function get_sha256(fetcher, fetcherargs)
-    @info "Calling nix-prefetch for fetcher $fetcher with args: $fetcherargs"
+    @debug "Calling nix-prefetch for fetcher $fetcher with args: $fetcherargs"
 
     err = IOBuffer()
     cmd = pipeline(`nix-prefetch $fetcher --hash-algo sha256 --output raw --input json`, stderr = err)
@@ -56,7 +56,7 @@ function get_sha256(fetcher, fetcherargs)
         @error String(take!(err))
         rethrow()
     finally
-        @info String(take!(err))
+        @debug String(take!(err))
     end
 
     return sha256 
@@ -65,6 +65,8 @@ end
 function nixfmt(nixexpr::String)
     stdin = IOBuffer(nixexpr)
     stdout = IOBuffer()
-    run(pipeline(`nixfmt`, stdin=stdin, stdout=stdout))
+    stderr = IOBuffer()
+    run(pipeline(`nixfmt`; stdin, stdout, stderr))
+    @debug String(take!(stderr))
     return String(take!(stdout))
 end
