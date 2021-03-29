@@ -125,6 +125,12 @@ uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 [[NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
+[[NixSourcerer]]
+deps = ["ArgParse", "Dates", "GitCommand", "HTTP", "JSON", "TOML"]
+path = ".."
+uuid = "393ab781-533d-4207-828b-ae5a02ad719c"
+version = "0.1.0"
+
 [[OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "71bbbc616a1d710879f5a1021bcba65ffba6ce58"
@@ -134,6 +140,12 @@ version = "1.1.1+6"
 [[PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
+
+[[PackageCompiler]]
+deps = ["Libdl", "Pkg", "UUIDs"]
+git-tree-sha1 = "d448727c4b86be81b225b738c88d30334fda6779"
+uuid = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
+version = "1.2.5"
 
 [[Parsers]]
 deps = ["Dates"]

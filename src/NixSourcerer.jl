@@ -16,6 +16,7 @@ using JSON
 using HTTP
 using GitCommand
 using Dates
+using ArgParse
 
 
 export update
@@ -30,6 +31,9 @@ include("handlers/github.jl")
 include("handlers/file.jl")
 include("handlers/archive.jl")
 include("handlers/crate.jl")
+
+include("main.jl")
+
 
 const HANDLERS = Dict(
     "github" => github_handler,
@@ -46,6 +50,8 @@ function update(path)
     if !isfile(tomlpath)
         error("$tomlpath does not exist!")
     end
+
+    @info "Found $(tomlpath)"
 
     toml = TOML.parsefile(tomlpath)
 
@@ -68,9 +74,18 @@ function update(path)
     end
 
     nixexpr = generate_nixexpr(entry_specs)
+
+    if isfile(nixpath)
+        @info "Updating existing $nixpath"
+    else
+        @info "Creating new $nixpath"
+    end
+
     open(nixpath, "w") do io
         write(io, nixexpr)
     end
+
+    @info "Done!"
 end
 
 
