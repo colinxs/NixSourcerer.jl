@@ -1,0 +1,37 @@
+[julia-versions]
+type = "file"
+url = "https://julialang-s3.julialang.org/bin/versions.json"
+
+[lscolors_crate]
+pname = "lscolors"
+type = "crate"
+version = "0.7.1"
+
+[lscolors_url]
+type = "archive"
+url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
+
+[niv_branch]
+branch = "master"
+owner = "nmattia"
+repo = "niv"
+type = "github"
+
+[niv_commit]
+commit = "af958e8057f345ee1aca714c1247ef3ba1c15f5e"
+fetchSubmodules = true
+owner = "nmattia"
+repo = "niv"
+type = "github"
+
+[niv_tag]
+owner = "nmattia"
+repo = "niv"
+tag = "v0.2.19"
+type = "github"
+
+[tree-sitter-bash_release]
+owner = "tree-sitter"
+release = "latest"
+repo = "tree-sitter-bash"
+type = "github"
