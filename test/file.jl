@@ -26,13 +26,10 @@ include("preamble.jl")
         "file2.fetcherName" => "builtins.fetchurl", 
         "file2.fetcherArgs.url" => url,
         "file2.fetcherArgs.sha256" => sha256,
+    
     )
-    with_source_toml(toml) do dir
-        update(dir)
-        print(read("$dir/Sources.nix", String))
-        # @test nix_eval_source_attr(dir, "file1.fetcherArgs.sha256") == truth["file1"]["sha256"]
-        compare_source_attrs(dir, truth)
-    end
+
+    runtest(toml, truth)
 end
 
 end
