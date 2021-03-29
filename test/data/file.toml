@@ -1,0 +1,4 @@
+[file]
+type = "file"
+url = "https://julialang-s3.julialang.org/bin/versions.json"
+
