@@ -1,18 +1,14 @@
-[archive_nixpkgs]
+[archive_builtin]
 type = "archive"
 url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
+builtin = true
 
-# [archive_builtin]
-# type = "archive"
-# url = "https://crates.io/api/v1/crates/lscolors/0.7.1/download#crate.tar.gz"
-# builtin = true
-#
-# [crate_version_builtin]
-# pname = "lscolors"
-# type = "crate"
-# version = "0.7.1"
-# builtin = true
-#
+[crate_version_builtin]
+pname = "lscolors"
+type = "crate"
+version = "0.7.1"
+builtin = true
+
 # [file]
 # type = "file"
 # url = "https://julialang-s3.julialang.org/bin/versions.json"

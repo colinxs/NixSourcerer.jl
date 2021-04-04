@@ -2,41 +2,38 @@
 # TODO submodules when private
 # TODO private tarball?
 
-const GITHUB_SCHEMA = [
+const GITHUB_SCHEMA = CompositeSchema(
     SimpleSchema("owner", String, true),
     SimpleSchema("repo", String, true),
     ExclusiveSchema(("rev", "branch", "tag", "release"), (String, String, String, String), true),
     SimpleSchema("submodule", Bool, false)
-]
+)
 
-function github_handler(name::AbstractString, spec::AbstractDict)
-    verify(GITHUB_SCHEMA, name, spec)
+function github_handler(name::AbstractString, source::AbstractDict)
+    submodule = get(source, "submodule", false)
+    owner = source["owner"]
+    repo = source["repo"]
 
-    submodule = get(spec, "submodule", false)
-    owner = spec["owner"]
-    repo = spec["repo"]
-
-    rev = if haskey(spec, "rev")
-        spec["rev"]
-    elseif haskey(spec, "branch")
-        github_get_rev_sha_from_ref(owner, repo, "heads/$(spec["branch"])")
-    elseif haskey(spec, "tag")
-        github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
-    elseif haskey(spec, "release")
-        tag = github_api_get(owner, repo, "releases/$(spec["release"])")["tag_name"]
+    rev = if haskey(source, "rev")
+        source["rev"]
+    elseif haskey(source, "branch")
+        github_get_rev_sha_from_ref(owner, repo, "heads/$(source["branch"])")
+    elseif haskey(source, "tag")
+        github_get_rev_sha_from_ref(owner, repo, "tags/$(source["tag"])")
+    elseif haskey(source, "release")
+        tag = github_api_get(owner, repo, "releases/$(source["release"])")["tag_name"]
         github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
     end
 
     if submodule
-        new_spec = subset(spec, "builtin", "rev", "submodule")
-        new_spec["url"] = "https://github.com/$(owner)/$(repo).git"
-        return git_handler(name, new_spec)
+        new_source = subset(source, "builtin", "rev", "submodule")
+        new_source["url"] = "https://github.com/$(owner)/$(repo).git"
+        return git_handler(name, new_source)
     else
-        new_spec = subset(spec, "builtin")
-        new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
-        fetcher, fetcherargs, meta = archive_handler(name, new_spec)
-        meta = merge(meta, Dict("rev" => rev)) 
-        return fetcher, fetcherargs, meta 
+        new_source = subset(source, "builtin")
+        new_source["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
+        source = archive_handler(name, new_source)
+        return Source(;pname = name, version = rev, fetcher = source.fetcher, fetcher_args = source.fetcher_args) 
     end
 end
 

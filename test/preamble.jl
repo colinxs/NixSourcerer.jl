@@ -31,7 +31,7 @@ end
 
 
 function nix_eval_source_attr(dir, attr)
-    expr = "( (import $(dir)/Sources.nix {}).$(attr) )"
+    expr = "( (import $(dir)/NixManifest.nix {}).$(attr) )"
     strip(rundebug(`nix eval --raw $(expr)`, true))
 end
 
@@ -100,7 +100,7 @@ end
 
 function with_update(fn::Function, toml::AbstractDict)
     mktempdir() do dir
-        open("$(dir)/Sources.toml", "w") do io
+        open("$(dir)/NixProject.toml", "w") do io
             TOML.print(io, toml)
         end
         update(dir)

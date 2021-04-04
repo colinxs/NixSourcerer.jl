@@ -33,4 +33,21 @@ end
 #
 # function safemerge(x::AbstractDict, ys::AbstractDict...)
 
+function get_sha256(fetcher, fetcherargs)
+    @debug "Calling nix-prefetch for fetcher $fetcher with args: $fetcherargs"
 
+    err = IOBuffer()
+    cmd = pipeline(`nix-prefetch $fetcher --hash-algo sha256 --output raw --input json`, stderr = err)
+    sha256 = try
+        open(cmd, IOBuffer(JSON.json(fetcherargs)), read=true) do p
+            strip(read(p, String))
+        end
+    catch e
+        @error String(take!(err))
+        rethrow()
+    finally
+        @debug String(take!(err))
+    end
+
+    return sha256 
+end

@@ -1,24 +1,21 @@
-const CRATE_SCHEMA = [
-    SimpleSchema("pname", String, true)
-    SimpleSchema("version", String, true)
-    SimpleSchema("builtin", Bool, false)
-]
+const CRATE_SCHEMA = CompositeSchema(
+    SimpleSchema("pname", String, true),
+    SimpleSchema("version", String, true),
+    SimpleSchema("builtin", Bool, false),
+)
 
 const CRATES_IO_BASE_URL="https://crates.io/api/v1/crates"
 
-function crate_handler(name::AbstractString, spec::AbstractDict)
-    verify(CRATE_SCHEMA, name, spec) 
+function crate_handler(name::AbstractString, source::AbstractDict)
+    pname = source["pname"]
+    version = parse_crate_version(pname, source["version"])
 
-    pname = spec["pname"]
-    version = parse_crate_version(pname, spec["version"])
+    new_source = subset(source, "builtin")
+    new_source["url"] = crate_tarball_url(pname, version) 
 
-    new_spec = subset(spec, "builtin")
-    new_spec["url"] = crate_tarball_url(pname, version) 
+    source = archive_handler(name, new_source)
 
-    fetcher, fetcherargs, meta = archive_handler(name, new_spec)
-    meta = merge(meta, Dict("version" => version))
-
-    return fetcher, fetcherargs, meta
+    return Source(;pname, version, fetcher = source.fetcher, fetcher_args = source.fetcher_args) 
 end
 
 function parse_crate_version(pname::AbstractString, version::AbstractString)

@@ -1,6 +1,6 @@
 module M
 
-include("./src/NixSourcerer.jl")
+include(joinpath(@__DIR__, "../src/NixSourcerer.jl"))
 using .NixSourcerer
 
 function main()
