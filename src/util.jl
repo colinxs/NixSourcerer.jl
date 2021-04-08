@@ -35,7 +35,7 @@ end
 
 function run_julia_script(script_file::AbstractString)
     @info "Running script $script_file"
-    run(setenv(`$script_file`; dir=dirname(script_file)))
+    run(setenv(`./$(basename(script_file))`; dir=dirname(script_file)))
     return nothing
 end
 
