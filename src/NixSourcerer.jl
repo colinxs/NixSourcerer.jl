@@ -11,10 +11,8 @@ using GitCommand
 using Dates
 using ArgParse
 
-
 export update
 export update_package
-
 
 include("Nix.jl")
 using .Nix
@@ -31,13 +29,12 @@ include("handlers/crate.jl")
 include("update.jl")
 include("main.jl")
 
-
 const SCHEMAS = Dict(
     "github" => GITHUB_SCHEMA,
     "file" => FILE_SCHEMA,
     "archive" => ARCHIVE_SCHEMA,
     "crate" => CRATE_SCHEMA,
-    "git" => GIT_SCHEMA
+    "git" => GIT_SCHEMA,
 )
 
 const HANDLERS = Dict(
@@ -45,7 +42,7 @@ const HANDLERS = Dict(
     "file" => file_handler,
     "archive" => archive_handler,
     "crate" => crate_handler,
-    "git" => git_handler
+    "git" => git_handler,
 )
 
 end # modulegit@github.com:colinxs/NixSourcerer.jl.git

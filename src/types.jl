@@ -10,7 +10,6 @@ nixsourcerer_error(msg::String...) = throw(NixSourcererError(join(msg)))
 
 Base.showerror(io::IO, err::NixSourcererError) = print(io, err.msg)
 
-
 ####
 #### Source
 ####
@@ -27,18 +26,13 @@ end
 function Source(;
     pname,
     version,
-    name = "$(pname)-$(version)",
+    name="$(pname)-$(version)",
     fetcher,
     fetcher_args,
-    meta = Dict{String,Any}()
+    meta=Dict{String,Any}(),
 )
     return Source(
-        strip(pname),
-        strip(version),
-        strip(name),
-        strip(fetcher),
-        fetcher_args,
-        meta
+        strip(pname), strip(version), strip(name), strip(fetcher), fetcher_args, meta
     )
 end
 
@@ -50,7 +44,7 @@ function Nix.print(io::IO, source::Source)
         :fetcher => Nix.NixText(source.fetcher),
         :fetcherName => source.fetcher,
         :fetcherArgs => source.fetcher_args,
-        :outPath  => Nix.NixText("fetcher fetcherArgs"),
+        :outPath => Nix.NixText("fetcher fetcherArgs"),
         :meta => source.meta,
     )
     write(io, "let ")
@@ -62,9 +56,8 @@ function Nix.print(io::IO, source::Source)
         write(io, ' ')
         Nix.print(io, var)
     end
-    write(io, "; }")
+    return write(io, "; }")
 end
-
 
 ####
 #### Schemas
@@ -72,28 +65,26 @@ end
 
 abstract type Schema end
 
-
 struct SimpleSchema <: Schema
     key::String
     type::Type
     required::Bool
 end
 
-Base.keys(schema::SimpleSchema) = (schema.key, )
+Base.keys(schema::SimpleSchema) = (schema.key,)
 
 function validate(schema::SimpleSchema, source)
     key = schema.key
     if haskey(source, key)
         T = schema.type
         V = typeof(source[key])
-        if ! (V <: T )
-            nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V") 
+        if !(V <: T)
+            nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V")
         end
     elseif schema.required
-        nixsourcerer_error("Must specify \"$key\"") 
+        nixsourcerer_error("Must specify \"$key\"")
     end
 end
-
 
 struct ExclusiveSchema{N} <: Schema
     keys::NTuple{N,String}
@@ -109,7 +100,7 @@ function validate(schema::ExclusiveSchema, source)
         key = schema.keys[idx]
         T = schema.types[idx]
         V = typeof(source[key])
-        if ! (V <: T)
+        if !(V <: T)
             nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V.")
         end
     elseif schema.required
@@ -117,14 +108,13 @@ function validate(schema::ExclusiveSchema, source)
     end
 end
 
-
 struct SchemaSet{N} <: Schema
     schemas::NTuple{N,Schema}
 end
 
 SchemaSet(schemas::Schema...) = SchemaSet(schemas)
 
-Base.keys(schema::SchemaSet) = foldl((a,b) -> (a..., keys(b)...), schema.schemas, init = ())
+Base.keys(schema::SchemaSet) = foldl((a, b) -> (a..., keys(b)...), schema.schemas; init=())
 
 const DEFAULT_SCHEMA_SET = SchemaSet(
     SimpleSchema("type", String, true),
@@ -146,7 +136,6 @@ function check_unknown_keys(set::SchemaSet, source)
         nixsourcerer_error("Unknown key(s): $(Tuple(unknown))")
     end
 end
-
 
 ####
 #### Project
@@ -189,7 +178,6 @@ function write_project(project::Project, project_file::AbstractString)
     end
 end
 
-
 ####
 #### Manifest
 ####
@@ -202,20 +190,18 @@ end
 
 Manifest() = Manifest(Dict{String,Source}())
 
-function validate(manifest::Manifest)
-end
+function validate(manifest::Manifest) end
 
 has_manifest(dir::AbstractString) = isfile(joinpath(dir, MANIFEST_FILE_NAME))
 
 function write_manifest(manifest::Manifest, manifest_file::AbstractString)
-    io = IOBuffer(append=true) 
+    io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
     Nix.print(io, manifest.sources)
     open(manifest_file, "w") do f
-        Nix.format(f, io) 
+        Nix.format(f, io)
     end
 end
-
 
 ####
 #### Package
@@ -230,25 +216,17 @@ end
 
 function validate(package::Package)
     validate(package.project)
-    validate(package.manifest)
+    return validate(package.manifest)
 end
 
 function read_package(dir::AbstractString)
     project_file = joinpath(dir, PROJECT_FILE_NAME)
     manifest_file = joinpath(dir, MANIFEST_FILE_NAME)
-    Package(
-        read_project(project_file),
-        Manifest(),
-        project_file,
-        manifest_file
-    )
+    return Package(read_project(project_file), Manifest(), project_file, manifest_file)
 end
 
-function write_package(package::Package) 
+function write_package(package::Package)
     # TODO sort keys?
     # write_project(package.project, package.project_file)
-    write_manifest(package.manifest, package.manifest_file)
+    return write_manifest(package.manifest, package.manifest_file)
 end
-
-
-

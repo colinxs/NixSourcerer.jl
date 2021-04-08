@@ -1,4 +1,4 @@
-module TestGit 
+module TestGit
 
 include("preamble.jl")
 
@@ -9,45 +9,24 @@ include("preamble.jl")
     sha256 = with_clone_and_checkout(nix_dir_sha256, url, rev)
 
     toml = Dict(
-        "test1" => Dict(
-            "type" => "git",
-            "url" => url,
-            "rev" => rev,
-        ),
-        "test2" => Dict(
-            "type" => "git",
-            "url" => url,
-            "rev" => rev,
-            "builtin" => true,
-        ),
-        "test3" => Dict(
-            "type" => "git",
-            "url" => url,
-            "rev" => rev,
-            "submodule" => true,
-        ),
-        "test4" => Dict(
-            "type" => "git",
-            "url" => url,
-            "tag" => tag,
-        ),
+        "test1" => Dict("type" => "git", "url" => url, "rev" => rev),
+        "test2" => Dict("type" => "git", "url" => url, "rev" => rev, "builtin" => true),
+        "test3" => Dict("type" => "git", "url" => url, "rev" => rev, "submodule" => true),
+        "test4" => Dict("type" => "git", "url" => url, "tag" => tag),
     )
     truth = Dict(
-        "test1.fetcherName" => "pkgs.fetchgit", 
+        "test1.fetcherName" => "pkgs.fetchgit",
         "test1.fetcherArgs.url" => url,
         "test1.fetcherArgs.rev" => rev,
         "test1.fetcherArgs.sha256" => sha256,
-
-        "test2.fetcherName" => "builtins.fetchGit", 
+        "test2.fetcherName" => "builtins.fetchGit",
         "test2.fetcherArgs.url" => url,
         "test2.fetcherArgs.rev" => rev,
-
-        "test3.fetcherName" => "pkgs.fetchgit", 
+        "test3.fetcherName" => "pkgs.fetchgit",
         "test3.fetcherArgs.url" => url,
         "test3.fetcherArgs.rev" => rev,
         "test1.fetcherArgs.sha256" => sha256,
-
-        "test4.fetcherName" => "pkgs.fetchgit", 
+        "test4.fetcherName" => "pkgs.fetchgit",
         "test4.fetcherArgs.url" => url,
         "test4.fetcherArgs.rev" => rev,
         "test1.fetcherArgs.sha256" => sha256,
@@ -56,5 +35,3 @@ include("preamble.jl")
 end
 
 end
-
-

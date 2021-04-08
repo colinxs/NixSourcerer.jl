@@ -1,4 +1,4 @@
-module TestGit 
+module TestGit
 
 include("preamble.jl")
 
@@ -19,12 +19,7 @@ include("preamble.jl")
             "rev" => rev,
             "builtin" => false,
         ),
-        "test2" => Dict(
-            "type" => "github",
-            "owner" => owner,
-            "repo" => repo,
-            "rev" => rev,
-        ),
+        "test2" => Dict("type" => "github", "owner" => owner, "repo" => repo, "rev" => rev),
         "test3" => Dict(
             "type" => "github",
             "owner" => owner,
@@ -34,15 +29,13 @@ include("preamble.jl")
         ),
     )
     truth = Dict(
-        "test1.fetcherName" => "pkgs.fetchzip", 
+        "test1.fetcherName" => "pkgs.fetchzip",
         "test1.fetcherArgs.url" => tarball_url,
         "test1.fetcherArgs.sha256" => sha256,
-        
-        "test2.fetcherName" => "builtins.fetchTarball", 
+        "test2.fetcherName" => "builtins.fetchTarball",
         "test2.fetcherArgs.url" => tarball_url,
         "test2.fetcherArgs.sha256" => sha256,
-        
-        "test3.fetcherName" => "pkgs.fetchgit", 
+        "test3.fetcherName" => "pkgs.fetchgit",
         "test3.fetcherArgs.url" => git_url,
         "test3.fetcherArgs.rev" => rev,
         "test3.fetcherArgs.sha256" => sha256,
@@ -51,6 +44,3 @@ include("preamble.jl")
 end
 
 end
-
-
-

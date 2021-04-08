@@ -6,8 +6,7 @@ end
 
 NixText(c::AbstractChar) = NixText(string(c))
 
-print(io, x::NixText) = Base.print(io, x.s) 
-
+print(io, x::NixText) = Base.print(io, x.s)
 
 function print(x)
     io = IOBuffer()
@@ -49,7 +48,7 @@ function print(io, x::AbstractDict)
     return nothing
 end
 
-function print(io, xs::Union{AbstractVector, Tuple})
+function print(io, xs::Union{AbstractVector,Tuple})
     write(io, '[')
     for x in xs
         write(io, " (")
@@ -59,7 +58,6 @@ function print(io, xs::Union{AbstractVector, Tuple})
     write(io, ']')
     return nothing
 end
-
 
 function format(io::IO, x)
     open(`nixfmt`, "w", io) do stdin
