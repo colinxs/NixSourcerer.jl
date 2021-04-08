@@ -49,9 +49,11 @@ function github_get_rev_sha_from_ref(owner, repo, ref)
 end
 
 function github_api_get(owner, repo, endpoint)
-    r = HTTP.get(
-        "https://api.github.com/repos/$(owner)/$(repo)/$endpoint",
-        Dict("Accept" => "application/vnd.github.v3+json"),
-    )
+    headers = Dict()
+    headers["Accept"] = "application/vnd.github.v3+json"
+    if haskey(ENV, "GITHUB_TOKEN")
+        headers["Authorization"] = "token $(ENV["GITHUB_TOKEN"])"
+    end
+    r = HTTP.get("https://api.github.com/repos/$(owner)/$(repo)/$endpoint", headers)
     return JSON.parse(String(r.body))
 end

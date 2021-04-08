@@ -25,7 +25,7 @@ function get_sha256(fetcher, fetcherargs)
     cmd = pipeline(
         `nix-prefetch $fetcher --hash-algo sha256 --output raw --input json`; stdin=io
     )
-    return strip(read(cmd, String)) 
+    return strip(rundebug(cmd, stdout = true))
 end
 
 function build_source(fetcher, fetcher_args)
