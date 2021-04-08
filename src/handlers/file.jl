@@ -1,14 +1,13 @@
-const FILE_SCHEMA = CompositeSchema(
+const FILE_SCHEMA = SchemaSet(
     SimpleSchema("url", String, true),
     SimpleSchema("builtin", Bool, false),
 )
 
 function file_handler(name::AbstractString, source::AbstractDict)
-    builtin = get(source, "builtin", false)
+    builtin = get(source, "builtin", true) 
 
     fetcher = builtin ? "builtins.fetchurl" : "pkgs.fetchurl"
     fetcher_args = subset(source, "url")
-    fetcher_args["sha256"] = get_sha256(fetcher, fetcher_args)
-    
-    return Source(;pname = name, version = fetcher_args["sha256"], fetcher, fetcher_args)
+    fetcher_args["sha256"] = sha256 = get_sha256(fetcher, fetcher_args)
+    return Source(;pname = name, version = sha256, fetcher, fetcher_args)
 end

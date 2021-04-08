@@ -5,7 +5,9 @@
 struct NixSourcererError <: Exception
     msg::String
 end
+
 nixsourcerer_error(msg::String...) = throw(NixSourcererError(join(msg)))
+
 Base.showerror(io::IO, err::NixSourcererError) = print(io, err.msg)
 
 
@@ -41,18 +43,26 @@ function Source(;
 end
 
 function Nix.print(io::IO, source::Source)
+    dict = Dict(
+        :name => source.name,
+        :pname => source.pname,
+        :version => source.version,
+        :fetcher => Nix.NixText(source.fetcher),
+        :fetcherName => source.fetcher,
+        :fetcherArgs => source.fetcher_args,
+        :outPath  => Nix.NixText("fetcher fetcherArgs"),
+        :meta => source.meta,
+    )
     write(io, "let ")
-    Nix.print(io, Pair(:name, source.name))
-    Nix.print(io, Pair(:pname, source.pname))
-    Nix.print(io, Pair(:version, source.version))
-    Nix.print(io, Pair(:fetcher, Nix.NixText(source.fetcher)))
-    Nix.print(io, Pair(:fetcherName, source.fetcher))
-    Nix.print(io, Pair(:fetcherArgs, source.fetcher_args))
-    Nix.print(io, Pair(:src, Nix.NixText("fetcher fetcherArgs")))
-    Nix.print(io, Pair(:meta, source.meta))
-    write(io, "in")
-    write(io, "{ inherit name pname version fetcher fetcherName fetcherArgs meta; }")
-    return nothing
+    for pair in dict
+        Nix.print(io, pair)
+    end
+    write(io, "in { inherit ")
+    for var in keys(dict)
+        write(io, ' ')
+        Nix.print(io, var)
+    end
+    write(io, "; }")
 end
 
 
@@ -62,11 +72,14 @@ end
 
 abstract type Schema end
 
+
 struct SimpleSchema <: Schema
     key::String
     type::Type
     required::Bool
 end
+
+Base.keys(schema::SimpleSchema) = (schema.key, )
 
 function validate(schema::SimpleSchema, source)
     key = schema.key
@@ -74,7 +87,7 @@ function validate(schema::SimpleSchema, source)
         T = schema.type
         V = typeof(source[key])
         if ! (V <: T )
-            nixsourcerer_nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V") 
+            nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V") 
         end
     elseif schema.required
         nixsourcerer_error("Must specify \"$key\"") 
@@ -88,6 +101,8 @@ struct ExclusiveSchema{N} <: Schema
     required::Bool
 end
 
+Base.keys(schema::ExclusiveSchema) = schema.keys
+
 function validate(schema::ExclusiveSchema, source)
     idx = findfirst(k -> haskey(source, k), schema.keys)
     if idx !== nothing
@@ -95,27 +110,42 @@ function validate(schema::ExclusiveSchema, source)
         T = schema.types[idx]
         V = typeof(source[key])
         if ! (V <: T)
-            nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V")
+            nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V.")
         end
     elseif schema.required
-        nixsourcerer_error("Must specify exactly one of \"$(schema.keys)\"")
+        nixsourcerer_error("Must specify exactly one of \"$(schema.keys)\".")
     end
 end
 
 
-struct CompositeSchema <: Schema
-    schemas::Vector{Schema}
+struct SchemaSet{N} <: Schema
+    schemas::NTuple{N,Schema}
 end
 
-CompositeSchema(schemas::Schema...) = CompositeSchema(collect(schemas))
+SchemaSet(schemas::Schema...) = SchemaSet(schemas)
 
-function validate(schema::CompositeSchema, spec)
-    all_keys = Set{String}()
-    for schema in schema.schemas
-        validate(schema, spec)
+Base.keys(schema::SchemaSet) = foldl((a,b) -> (a..., keys(b)...), schema.schemas, init = ())
+
+const DEFAULT_SCHEMA_SET = SchemaSet(
+    SimpleSchema("type", String, true),
+    SimpleSchema("builtin", Bool, false),
+    SimpleSchema("meta", Dict, false),
+)
+
+function validate(set::SchemaSet, source)
+    augmented = SchemaSet(DEFAULT_SCHEMA_SET.schemas..., set.schemas...)
+    check_unknown_keys(augmented, source)
+    for schema in augmented.schemas
+        validate(schema, source)
     end
 end
 
+function check_unknown_keys(set::SchemaSet, source)
+    unknown = setdiff(keys(source), keys(set))
+    if length(unknown) > 0
+        nixsourcerer_error("Unknown key(s): $(Tuple(unknown))")
+    end
+end
 
 
 ####
@@ -141,7 +171,7 @@ function validate(project::Project)
                 validate(SCHEMAS[source["type"]], source)
             end
         catch e
-            nixsourcerer_error("Could not parse source \"$name\"", sprint(showerror, e))
+            nixsourcerer_error("Could not parse source \"$name\": ", sprint(showerror, e))
             rethrow()
         end
     end
@@ -160,10 +190,9 @@ function write_project(project::Project, project_file::AbstractString)
 end
 
 
-
 ####
 #### Manifest
-####project.jl
+####
 
 const MANIFEST_FILE_NAME = "NixManifest.nix"
 
@@ -216,8 +245,9 @@ function read_package(dir::AbstractString)
 end
 
 function write_package(package::Package) 
-    write_manifest(package.manifest, package.manifest_file)
+    # TODO sort keys?
     # write_project(package.project, package.project_file)
+    write_manifest(package.manifest, package.manifest_file)
 end
 
 

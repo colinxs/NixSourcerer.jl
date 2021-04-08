@@ -61,15 +61,6 @@ function print(io, xs::Union{AbstractVector, Tuple})
 end
 
 
-# # TODO without nix eval for Dict
-# # TODO strip needed?
-# function print(io::IOBuffer, x)
-#     expr = "(builtins.fromJSON \"$(escape_string(JSON.json(x)))\")"
-#     str = strip(rundebug(`nix eval "$expr"`, true))
-#     print(io, str)
-# end
-
-
 function format(io::IO, x)
     open(`nixfmt`, "w", io) do stdin
         write(stdin, x)

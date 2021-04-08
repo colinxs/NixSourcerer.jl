@@ -1,14 +1,7 @@
-module NixSourcerer
-
-# TODO make shebang into template
-# TODO suppress stderror from nix-prefetch
-# TODO include name in fetcher request?
-# TODO passthru extra arguments to fetcher?
-# TODO change TOML sort so type first
-# TODO SRI hash (https://github.com/Mic92/nix-update/blob/e21c7830824e097611d046d5d5c7bdcce124a50f/nix_update/update.py#L33)
+# TODO delete unneeded stuff
 # TODO bootstrap nixpkgs
-# TODO validate schema
-# TODO verify before download
+
+module NixSourcerer
 
 using Base
 using TOML
@@ -20,12 +13,13 @@ using ArgParse
 
 
 export update
+export update_package
+
 
 include("Nix.jl")
 using .Nix
 
 include("types.jl")
-include("schema.jl")
 include("util.jl")
 
 include("handlers/git.jl")
@@ -37,11 +31,6 @@ include("handlers/crate.jl")
 include("update.jl")
 include("main.jl")
 
-# struct Source
-#     name::String
-#     fetcher::String
-#     fetcher_args::Dict{String,Any}
-# end
 
 const SCHEMAS = Dict(
     "github" => GITHUB_SCHEMA,

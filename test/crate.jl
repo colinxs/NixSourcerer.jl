@@ -2,7 +2,7 @@ module TestCrate
 
 include("preamble.jl")
 
-@testset "create" begin
+@testset "crate" begin
     pname = "lscolors"
     version = "0.7.1"
     url = "https://crates.io/api/v1/crates/$(pname)/$(version)/download#crate.tar.gz"
@@ -13,20 +13,17 @@ include("preamble.jl")
             "type" => "crate",
             "pname" => pname,
             "version" => version,
-            "url" => url,
+            "builtin" => false,
         ),
         "test2" => Dict(
             "type" => "crate",
             "pname" => pname,
             "version" => version,
-            "url" => url,
-            "builtin" => true,
         ),
         "test3" => Dict(
             "type" => "crate",
             "pname" => pname,
             "version" => "latest",
-            "url" => url,
         ),
     )
     truth = Dict(
@@ -38,7 +35,7 @@ include("preamble.jl")
         "test2.fetcherArgs.url" => url,
         "test2.fetcherArgs.sha256" => sha256,
         
-        "test3.fetcherName" => "pkgs.fetchzip", 
+        "test3.fetcherName" => "builtins.fetchTarball", 
         "test3.fetcherArgs.url" => url,
         "test3.fetcherArgs.sha256" => sha256,
     )

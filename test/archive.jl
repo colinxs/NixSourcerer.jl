@@ -9,11 +9,11 @@ include("preamble.jl")
         "test1" => Dict(
             "type" => "archive",
             "url" => url,
+            "builtin" => false 
         ),
         "test2" => Dict(
             "type" => "archive",
             "url" => url,
-            "builtin" => true
         ),
     )
     truth = Dict(

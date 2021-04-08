@@ -38,7 +38,8 @@ end
 function compare_source_attr(dir, truth, attr::AbstractString)
     value = nix_eval_source_attr(dir, attr) 
     expected = truth[attr]
-    @debug "Comparing attr $attr" value expected
+    res = value == expected
+    !res && @error "value: $value != expected: $expected"
     value == expected
 end
 
