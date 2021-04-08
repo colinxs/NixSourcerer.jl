@@ -197,7 +197,7 @@ has_manifest(dir::AbstractString) = isfile(joinpath(dir, MANIFEST_FILE_NAME))
 function write_manifest(manifest::Manifest, manifest_file::AbstractString)
     io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
-    Nix.print(io, manifest.sources)
+    Nix.print(io, manifest.sources; sort = true)
     open(manifest_file, "w") do f
         Nix.format(f, io)
     end

@@ -39,10 +39,11 @@ function print(io, x::Pair)
     return nothing
 end
 
-function print(io, x::AbstractDict)
+function print(io, x::AbstractDict; sort::Bool = false)
     write(io, '{')
-    for (k, v) in x
-        print(io, Pair(k, v))
+    ks = sort ? Base.sort(collect(keys(x))) : keys(x)
+    for k in ks
+        print(io, Pair(k, x[k]))
     end
     write(io, '}')
     return nothing
