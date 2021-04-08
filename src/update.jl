@@ -1,7 +1,10 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     if get(config, "recursive", false)
-        for (root, dirs, files) in walkdir(path)
+        if has_project(path)
             _update(path, config)
+        end
+
+        for (root, dirs, files) in walkdir(path)
             for dir in dirs
                 path = joinpath(root, dir)
                 if has_project(path)
