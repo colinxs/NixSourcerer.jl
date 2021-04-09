@@ -61,7 +61,7 @@ function print(io, xs::Union{AbstractVector,Tuple})
 end
 
 function format(io::IO, x)
-    open(`nixfmt`, "w", io) do stdin
+    open(`nixpkgs-fmt`, "w", io) do stdin
         write(stdin, x)
     end
     return nothing
