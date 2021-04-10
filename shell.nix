@@ -1,13 +1,12 @@
-{ pkgs ? import <nixpkgs> { }, mur ? import <murpkgs> { inherit pkgs; inherit (pkgs) system; } }:
+{ pkgs ? import <nixpkgs> { }}:
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    mur.julia.latest
+    git
     nix
     nix-prefetch
     nixpkgs-fmt
     cacert # Needed for network access
   ];
 }
-
 
