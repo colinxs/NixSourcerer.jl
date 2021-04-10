@@ -38,4 +38,4 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       # - uses: julia-actions/julia-runtest@v1
       # TODO --pure, needs murpkgs
-      - run: nix-shell --keep NIX_PATH --keep NIX_SSL_CERT_FILE --run 'julia -e "using Pkg; Pkg.test()"'
+      - run: nix-shell --keep NIX_PATH --keep NIX_SSL_CERT_FILE --run 'julia -e --project "using Pkg; Pkg.test()"'
