@@ -10,9 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - '1.6'
-          - 'nightly'
+        version: 
+          - "1"
         os:
           - ubuntu-latest
         arch:
@@ -38,4 +37,5 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       # - uses: julia-actions/julia-runtest@v1
-      - run: nix-shell --pure --keep NIX_PATH --keep NIX_SSL_CERT_FILE --run 'julia -e "using Pkg; Pkg.test()"'
+      # TODO --pure, needs murpkgs
+      - run: nix-shell --keep NIX_PATH --keep NIX_SSL_CERT_FILE --run 'julia -e "using Pkg; Pkg.test()"'
