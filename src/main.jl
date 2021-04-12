@@ -15,6 +15,7 @@ function parse_commandline()
             required = false
             arg_type = String
             nargs = '+'
+            default = nothing
         "-r", "--recursive"
             help = "Recursively update all environments under PATH"
             action = :store_true
@@ -29,7 +30,10 @@ function parse_commandline()
 end
 
 function main()
-    args = parse_commandline()
-    update(args["path"]; config=delete!(args, "path"))
+    config = parse_commandline()
+    path = config["path"]
+    delete!(config, "path")
+    isempty(config["names"]) && delete!(config, "names")
+    update(path; config)
     return nothing
 end

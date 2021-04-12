@@ -20,18 +20,18 @@ end
 
 function _update(path, config)
     script_file = joinpath(path, "update.jl")
+    @info "Updating package at '$path'."
     if isfile(script_file)
-        @info "Found $script_file. Skipping package update."
+        @info "Found update script. Not updating NixManifest.toml."
         run_julia_script(joinpath(path, "update.jl"))
     else
-        @info "Updating package at $path."
         update_package(path; config)
-        @info "Done!"
     end
     return nothing
 end
 
 function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
+    @info "Updating NixManifest.toml"
     validate_config(config)
 
     package = read_package(package_path)
@@ -57,17 +57,23 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
         asyncmap(name -> update!(package, name), collect(names); workers)
     end
 
+    @info "Done!"
     return write_package(package)
 end
 
 function update!(package::Package, name::AbstractString)
-    @info "Updating $name"
-    project_source = package.project.sources[name]
-    manifest_source = HANDLERS[project_source["type"]](name, project_source)
+    @info "Updating '$name'"
+    try
+        project_source = package.project.sources[name]
+        manifest_source = HANDLERS[project_source["type"]](name, project_source)
 
-    merge_recursively!(manifest_source.meta, get(project_source, "meta", Dict()))
+        merge_recursively!(manifest_source.meta, get(project_source, "meta", Dict()))
 
-    package.manifest.sources[name] = manifest_source
+        package.manifest.sources[name] = manifest_source
+    catch
+        nixsourcerer_error("Could not update source $name")
+        rethrow()
+    end
     return package
 end
 
