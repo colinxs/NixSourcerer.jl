@@ -10,6 +10,7 @@ nixsourcerer_error(msg::String...) = throw(NixSourcererError(join(msg)))
 
 Base.showerror(io::IO, err::NixSourcererError) = print(io, err.msg)
 
+
 ####
 #### Source
 ####
@@ -174,7 +175,7 @@ end
 
 function write_project(project::Project, project_file::AbstractString)
     open(project_file, "w") do io
-        TOML.print(io, Project.sources)
+        TOML.print(io, project.sources)
     end
 end
 
