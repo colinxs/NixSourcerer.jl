@@ -38,7 +38,7 @@ function github_handler(name::AbstractString, source::AbstractDict)
         return Source(;
             pname=name,
             version=rev,
-            fetcher=source.fetcher,
+            fetcher_name=source.fetcher_name,
             fetcher_args=source.fetcher_args,
         )
     end

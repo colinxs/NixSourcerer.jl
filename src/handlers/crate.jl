@@ -16,7 +16,7 @@ function crate_handler(name::AbstractString, source::AbstractDict)
     source = archive_handler(name, new_source)
 
     return Source(;
-        pname, version, fetcher=source.fetcher, fetcher_args=source.fetcher_args
+        pname, version, fetcher_name=source.fetcher_name, fetcher_args=source.fetcher_args
     )
 end
 

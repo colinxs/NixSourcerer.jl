@@ -32,18 +32,18 @@ function git_handler(name, source)
         # TODO nix 2.4 fetchGit
         error("Cannot fetch submodules with builtins.fetchGit (until Nix 2.4)")
     elseif builtin && !submodule
-        fetcher = "builtins.fetchGit"
+        fetcher_name = "builtins.fetchGit"
         fetcher_args["ref"] = ref
         # TODO
         # Force build since nix-prefetch doesn't built builtins.fetchGit
-        build_source(fetcher, fetcher_args)
+        build_source(fetcher_name, fetcher_args)
     else
         # TODO fetchgit doesn't have ref option
-        fetcher = "pkgs.fetchgit"
-        fetcher_args["sha256"] = get_sha256(fetcher, fetcher_args)
+        fetcher_name = "pkgs.fetchgit"
+        fetcher_args["sha256"] = get_sha256(fetcher_name, fetcher_args)
     end
 
-    return Source(; pname=name, version=rev, fetcher, fetcher_args)
+    return Source(; pname=name, version=rev, fetcher_name, fetcher_args)
 end
 
 # TODO kind of a hack

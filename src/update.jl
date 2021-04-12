@@ -33,16 +33,29 @@ function _update(path, config)
 end
 
 function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
+    validate_config(config)
+
     package = read_package(package_path)
     validate(package)
 
-    names = keys(package.project.sources)
-    ntasks = get(config, "ntasks", 1)::Integer
-    @assert ntasks > 0
-    if ntasks == 1
+    if haskey(config, "names")
+        names = config["names"] 
+        for name in config["names"] 
+            if !haskey(package.project.sources, name) 
+                nixsourcerer_error("Key $name missing from $(package.project_file)")
+            end
+        end
+    else
+        names = keys(package.project.sources)
+    end
+
+    workers = length(names) == 1 ? 1 : get(config, "workers", 1)::Integer
+    @assert workers > 0
+
+    if workers == 1
         foreach(name -> update!(package, name), names)
     else
-        asyncmap(name -> update!(package, name), collect(names); ntasks)
+        asyncmap(name -> update!(package, name), collect(names); workers)
     end
 
     return write_package(package)
@@ -58,3 +71,12 @@ function update!(package::Package, name::AbstractString)
     package.manifest.sources[name] = manifest_source
     return package
 end
+
+function validate_config(config::AbstractDict)
+    if get(config, "recursive", false) && haskey(config, "names")
+        nixsourcerer_error("Cannot specify 'recursive' and 'names' at the same time")
+    end
+    get(config, "workers", 1) > 0 || nixsourcerer_error("'workers' must be > 0)")
+    return nothing
+end
+     

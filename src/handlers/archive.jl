@@ -6,8 +6,8 @@ function archive_handler(name::AbstractString, source::AbstractDict)
     # NOTE builtin fetcher appears to be faster
     builtin = get(source, "builtin", true)
 
-    fetcher = builtin ? "builtins.fetchTarball" : "pkgs.fetchzip"
+    fetcher_name = builtin ? "builtins.fetchTarball" : "pkgs.fetchzip"
     fetcher_args = subset(source, "url")
-    fetcher_args["sha256"] = get_sha256(fetcher, fetcher_args)
-    return Source(; pname=name, version=fetcher_args["sha256"], fetcher, fetcher_args)
+    fetcher_args["sha256"] = get_sha256(fetcher_name, fetcher_args)
+    return Source(; pname=name, version=fetcher_args["sha256"], fetcher_name, fetcher_args)
 end

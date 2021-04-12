@@ -19,17 +19,17 @@ function rundebug(cmd::Base.AbstractCmd; stdout::Bool=false)
     end
 end
 
-function get_sha256(fetcher, fetcherargs)
-    @debug "Calling nix-prefetch" fetcher fetcherargs
+function get_sha256(fetcher_name, fetcherargs)
+    @debug "Calling nix-prefetch" fetcher_name fetcherargs
     io = IOBuffer(JSON.json(fetcherargs))
     cmd = pipeline(
-        `nix-prefetch $fetcher --hash-algo sha256 --output raw --input json`; stdin=io
+        `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin=io
     )
     return strip(rundebug(cmd, stdout = true))
 end
 
-function build_source(fetcher, fetcher_args)
-    expr = "(with (import <nixpkgs> {}); ($fetcher $(Nix.print(fetcher_args))).outPath)"
+function build_source(fetcher_name, fetcher_args)
+    expr = "(with (import <nixpkgs> {}); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
     return run(pipeline(`nix eval $expr`; stdout=devnull))
 end
 
