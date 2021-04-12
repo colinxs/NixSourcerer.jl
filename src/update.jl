@@ -8,7 +8,6 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
             for dir in dirs
                 path = joinpath(root, dir)
                 if has_project(path)
-                    @info path
                     _update(path, config)
                 end
             end

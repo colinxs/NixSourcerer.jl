@@ -256,7 +256,6 @@ function write_package(package::Package)
     # TODO sort keys?
     # write_project(package.project, package.project_file)
     for name in keys(package.manifest.sources)
-        @info "YO" name
         if !haskey(package.project.sources, name)
             delete!(package.manifest.sources, name)
         end
