@@ -1,4 +1,6 @@
 # TODO add ssh/https option
+# TODO offset more work into git.jl
+#  - e.g. get rid of github_get_rev_sha_from_ref
 
 const GITHUB_SCHEMA = SchemaSet(
     SimpleSchema("owner", String, true),
@@ -14,15 +16,18 @@ function github_handler(name::AbstractString, source::AbstractDict)
     owner = source["owner"]
     repo = source["repo"]
 
-    rev = if haskey(source, "rev")
-        source["rev"]
+    if haskey(source, "rev")
+        rev = version = source["rev"]
     elseif haskey(source, "branch")
-        github_get_rev_sha_from_ref(owner, repo, "heads/$(source["branch"])")
+        rev = github_get_rev_sha_from_ref(owner, repo, "heads/$(source["branch"])")
+        version = source["branch"]
     elseif haskey(source, "tag")
-        github_get_rev_sha_from_ref(owner, repo, "tags/$(source["tag"])")
+        rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(source["tag"])")
+        version = source["tag"]
     elseif haskey(source, "release")
         tag = github_api_get(owner, repo, "releases/$(source["release"])")["tag_name"]
-        github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
+        rev = github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
+        version = source["release"]
     end
 
     if submodule
@@ -30,14 +35,16 @@ function github_handler(name::AbstractString, source::AbstractDict)
             source, keys(DEFAULT_SCHEMA_SET)..., "rev", "submodule", "builtin"
         )
         new_source["url"] = "https://github.com/$(owner)/$(repo).git"
-        return git_handler(name, new_source)
+        source = git_handler(name, new_source)
+        source.version = version
+        return source
     else
         new_source = subset(source, keys(DEFAULT_SCHEMA_SET)...)
         new_source["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
         source = archive_handler(name, new_source)
         return Source(;
             pname=name,
-            version=rev,
+            version,
             fetcher_name=source.fetcher_name,
             fetcher_args=source.fetcher_args,
         )

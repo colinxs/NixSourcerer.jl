@@ -1,5 +1,6 @@
 subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
 
+
 function rundebug(cmd::Base.AbstractCmd; stdout::Bool=false)
     @debug "Running command: $cmd"
     ioerr = IOBuffer()
@@ -28,13 +29,19 @@ function get_sha256(fetcher_name, fetcherargs)
     return strip(rundebug(cmd, stdout = true))
 end
 
+function get_cargosha256(path, attr)
+    expr = "{ sha256 }: (import $(path) {}).$(attr).cargoDeps.overrideAttrs (_: { cargoSha256 = sha256; })"
+    return strip(rundebug(`nix-prefetch --hash-algo sha256 --output raw $expr`, stdout=true))
+end
+
 function build_source(fetcher_name, fetcher_args)
     expr = "(with (import <nixpkgs> {}); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
     return run(pipeline(`nix eval $expr`; stdout=devnull))
 end
 
 function run_julia_script(script_file::AbstractString)
-    run(setenv(`./$(basename(script_file))`; dir=dirname(script_file)))
+    cmd = `nix-shell --run "julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)"`
+    run(setenv(cmd; dir=dirname(script_file)))
     return nothing
 end
 

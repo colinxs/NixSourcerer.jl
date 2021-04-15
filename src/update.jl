@@ -54,7 +54,7 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
     if workers == 1
         foreach(name -> update!(package, name), names)
     else
-        asyncmap(name -> update!(package, name), collect(names); workers)
+        asyncmap(name -> update!(package, name), collect(names); ntasks=workers)
     end
 
     @info "Done!"
@@ -64,6 +64,7 @@ end
 function update!(package::Package, name::AbstractString)
     @info "Updating '$name'"
     try
+        error("SWAG")
         project_source = package.project.sources[name]
         manifest_source = HANDLERS[project_source["type"]](name, project_source)
 

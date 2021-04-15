@@ -24,7 +24,7 @@ const SOURCE_KEYMAP = Dict(
     "meta" => "meta"
 )
 
-struct Source
+mutable struct Source
     pname::String
     version::String
     name::String
@@ -151,6 +151,8 @@ end
 #### Project
 ####
 
+# TODO it's weird that manifest is .meta but project is dict
+
 const PROJECT_FILE_NAME = "NixProject.toml"
 
 struct Project
@@ -178,11 +180,16 @@ end
 
 has_project(dir::AbstractString) = isfile(joinpath(dir, PROJECT_FILE_NAME))
 
-function read_project(project_file::AbstractString)
-    return Project(TOML.parsefile(project_file))
+function read_project(project_file::AbstractString=PROJECT_FILE_NAME)
+    raw = TOML.parsefile(project_file)
+    # TODO hack
+    for v in values(raw)
+        v["meta"] = get(v, "meta", Dict())
+    end
+    return Project(raw)
 end
 
-function write_project(project::Project, project_file::AbstractString)
+function write_project(project::Project, project_file::AbstractString=PROJECT_FILE_NAME)
     open(project_file, "w") do io
         TOML.print(io, project.sources)
     end
@@ -204,9 +211,10 @@ function validate(manifest::Manifest) end
 
 has_manifest(dir::AbstractString) = isfile(joinpath(dir, MANIFEST_FILE_NAME))
 
-function read_manifest(manifest_file::AbstractString)
+function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
+    manifest_file = abspath(manifest_file)
     fields = ["pname", "version", "name", "fetcherName", "fetcherArgs", "meta"]
-    expr = """(with (import <nixpkgs> {}).lib; mapAttrs (n: v: getAttrs [$(join(map(s -> "\"$(s)\"", fields), ' '))] v) (import $(manifest_file) {}))"""
+    expr = """(with (import <nixpkgs> {}).lib; mapAttrs (n: v: getAttrs [$(join(map(s -> "\"$(s)\"", fields), ' '))] v) (import "$(manifest_file)" {}))"""
     raw = strip(read(`nix eval --json $expr`, String))
     json = JSON.parse(raw)
 
@@ -220,7 +228,7 @@ function read_manifest(manifest_file::AbstractString)
 end
 
 
-function write_manifest(manifest::Manifest, manifest_file::AbstractString)
+function write_manifest(manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILE_NAME)
     io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
     Nix.print(io, manifest.sources; sort = true)
