@@ -64,7 +64,6 @@ end
 function update!(package::Package, name::AbstractString)
     @info "Updating '$name'"
     try
-        error("SWAG")
         project_source = package.project.sources[name]
         manifest_source = HANDLERS[project_source["type"]](name, project_source)
 
