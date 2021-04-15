@@ -13,8 +13,9 @@
       system = "x86_64-linux";
       pkgs = inputs.nixpkgs.legacyPackages."${system}";
       murpkgs = inputs.nix-home.legacyPackages."${system}".mur;
+      julia = murpkgs.julia.latest;
     in {
-      # defaultPackage = pkgs.callPackage ./default.nix { inherit mur; };
+      defaultApp = pkgs.callPackage ./default.nix { inherit julia; };
     };
 }
 
