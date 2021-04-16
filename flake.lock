@@ -136,7 +136,7 @@
         ]
       },
       "locked": {
-        "narHash": "sha256-aPM8IXUIrq3PkxdQQINX6EyRrFv3XwXT5NAWIGqvCgI=",
+        "narHash": "sha256-StIejK+0Y8OMZ9pihFxNoVDN/fVyz21w+/gyZypWOk4=",
         "path": "/home/colinxs/nix-home",
         "type": "path"
       },
