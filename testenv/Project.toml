@@ -1,2 +1,4 @@
 [deps]
 GitCommand = "49b5b516-ca3f-4003-a081-42bdcf55082d"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+UniversalLogger = "5c5e3362-9445-4819-9f95-51c44c51adeb"

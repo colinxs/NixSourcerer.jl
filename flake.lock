@@ -46,6 +46,22 @@
         "type": "github"
       }
     },
+    "general-registry": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1618627401,
+        "narHash": "sha256-yJYGjGs3xFUot+MK7XoG6q75KlqcB5mluTlYAKdzzJk=",
+        "owner": "JuliaRegistries",
+        "repo": "General",
+        "rev": "d3a01eb4a0f0aeffd90f69b3032e1656fba3bae9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "JuliaRegistries",
+        "repo": "General",
+        "type": "github"
+      }
+    },
     "gitignore": {
       "flake": false,
       "locked": {
@@ -136,13 +152,20 @@
         ]
       },
       "locked": {
-        "narHash": "sha256-StIejK+0Y8OMZ9pihFxNoVDN/fVyz21w+/gyZypWOk4=",
-        "path": "/home/colinxs/nix-home",
-        "type": "path"
+        "dir": "nix-home",
+        "lastModified": 1618647321,
+        "narHash": "sha256-/Rk4Vb8PN3EgerpSXBP2+TsEWdcaDlkYdC2b7KqBKjA=",
+        "ref": "flake",
+        "rev": "89ab5f1b872d3b890e5c2a906b633bbb6e9911d0",
+        "revCount": 163,
+        "type": "git",
+        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
       },
       "original": {
-        "path": "/home/colinxs/nix-home",
-        "type": "path"
+        "dir": "nix-home",
+        "ref": "flake",
+        "type": "git",
+        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
       }
     },
     "nixpkgs": {
@@ -158,6 +181,22 @@
         "owner": "nixos",
         "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "personal-registry": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1617882362,
+        "narHash": "sha256-+Gk6MmbXmVWe01BMDGSOtpPvLPRnnLMfMy6vjgAfuJE=",
+        "owner": "colinxs",
+        "repo": "JuliaRegistry",
+        "rev": "0151ec459b6cd42b89f89d50ed361399fb027464",
+        "type": "github"
+      },
+      "original": {
+        "owner": "colinxs",
+        "repo": "JuliaRegistry",
         "type": "github"
       }
     },
@@ -180,8 +219,10 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "general-registry": "general-registry",
         "nix-home": "nix-home",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "personal-registry": "personal-registry"
       }
     }
   },
