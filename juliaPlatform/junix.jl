@@ -5,6 +5,7 @@ using Pkg.MiniProgressBars
 using TOML
 using Base: UUID
 using NixSourcerer
+using NixSourcerer: Source
 
 function get_archive_url_for_version(url::String, ref)
     if (m = match(r"https://github.com/(.*?)/(.*?).git", url)) !== nothing
@@ -77,11 +78,13 @@ function get_source_path(ctx::Context, pkg::PackageInfo)
     Pkg.Operations.source_path(ctx, spec)
 end
 
+gen_name(pkg::PackageInfo) = "$(pkg.name)-$(pkg.version)"
+
 function generate_sources(archives, repos, deps_to_install::Dict{UUID,PackageInfo}; ntasks = 5)
-    # Base.Experimental.@sync begin
-    @sync begin
+    Base.Experimental.@sync begin
+    # @sync begin
         jobs = Channel(ntasks)
-        results = Channel{Tuple{UUID,Union{String,Nothing}}}(ntasks)
+        results = Channel(ntasks)
 
         @async begin
             for (uuid, pkg) in deps_to_install
@@ -98,9 +101,13 @@ function generate_sources(archives, repos, deps_to_install::Dict{UUID,PackageInf
                         try
                             # NOTE nixpkgs.fetchzip doesn't know how to handle archives
                             # without a suffix like those from pkg server
-                            src = get_nix_source("builtins.fetchTarball", ["--url", url])
+                            # src = get_nix_source("builtins.fetchTarball", ["--url", url])
+                            # src = get_nix_source("builtins.fetchTarball", ["--url", url])
+                            spec = Dict("url" => url, "builtin" => true)
+                            src = NixSourcerer.file_handler(gen_name(pkg), spec)
                             break
-                        catch
+                        catch e
+                            @error sprint(showerror, e)
                             continue
                         end
                     end
@@ -108,12 +115,21 @@ function generate_sources(archives, repos, deps_to_install::Dict{UUID,PackageInf
                     if src === nothing
                         for repo in repos[uuid]
                             try
-                                src = get_nix_source("fetchgit", ["--url", repo, "--rev", pkg.tree_hash])
+                                # src = get_nix_source("fetchgit", ["--url", repo, "--rev", pkg.tree_hash])
+                                spec = Dict("url" => repo, "rev" => pkg.tree_hash, "builtin" => false)
+                                src = NixSourcerer.git_handler(gen_name(pkg), spec)
                                 break
-                            catch
+                            catch e
+                                @error e
                                 continue
                             end
                         end
+                    end
+
+                    if !(src === nothing)
+                        src.meta["name"] = pkg.name
+                        src.meta["version"] = pkg.version
+                        src.meta["tree_hash"] = pkg.tree_hash
                     end
 
                     put!(results, (uuid, src))
@@ -121,35 +137,33 @@ function generate_sources(archives, repos, deps_to_install::Dict{UUID,PackageInf
             end
         end
 
+        bar = MiniProgressBar(; indent=2, header = "Progress", color = Base.info_color(),
+                                percentage=false, always_reprint=true, max = length(deps_to_install))
         try
-            bar = MiniProgressBar(; indent=2, header = "Progress", color = Base.info_color(),
-                                  percentage=false, always_reprint=true, max = length(deps_to_install))
             start_progress(stdout, bar)
-            sources = Dict{UUID,String}()
+            manifest = NixSourcerer.Manifest()
             for i=1:length(deps_to_install)
                 bar.current = i
                 uuid, src = take!(results)
                 if src === nothing 
-                    @info "SWAG"
                     error("No sources for UUID '$(uuid)'")
                 else
                     print_progress_bottom(stdout)
                     show_progress(stdout, bar)
                 end
-                sources[uuid] = src
+                manifest.sources[string(uuid)] = src
             end
 
-            @info "ALL DONE"
-
-            return sources
+            return manifest 
         finally
+            end_progress(stdout, bar)
             close(jobs)
         end
     end
 
 end
 
-function generate_nix_expression(sources::Dict{UUID,String})
+function generate_nix_expression(sources::Dict{UUID,})
     str = sprint() do io
         print(io, "{\n")
         for (uuid, src) in sources
@@ -168,11 +182,14 @@ function generate(package)
         load_package_urls(Context())
     end
 
-    sources = generate_sources(archives, repos, deps)
+    manifest = generate_sources(archives, repos, deps)
 
-    expr = generate_nix_expression(sources)
+    # expr = generate_nix_expression(sources)
 
-    write(joinpath(@__DIR__, "./Example.nix"), expr)
+    # write(joinpath(@__DIR__, "./Example.nix"), expr)
+    NixSourcerer.write_manifest(manifest, joinpath(@__DIR__, "./Example.nix"))
+
+    return manifest
 end
-generate(joinpath(@__DIR__, "../testenv"))
+manifest = generate(joinpath(@__DIR__, "../testenv"))
 

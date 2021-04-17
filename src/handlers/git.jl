@@ -6,27 +6,27 @@ const GIT_SCHEMA = SchemaSet(
     SimpleSchema("submodule", Bool, false),
 )
 
-function git_handler(name, source)
+function git_handler(name, spec)
     # NOTE pkgs.fetchgit appears to be faster because shallow clone
-    builtin = get(source, "builtin", false)
-    submodule = get(source, "submodule", false)
-    url = source["url"]
+    builtin = get(spec, "builtin", false)
+    submodule = get(spec, "submodule", false)
+    url = spec["url"]
 
-    if haskey(source, "rev")
+    if haskey(spec, "rev")
         # TODO is this correct when not sourceifying commit? 
         # It's what Nix builtins.fetchGit defaults to.
         # Should be refs/heads/HEAD but that errors.
         ref = "HEAD"
-        rev = source["rev"]
-    elseif haskey(source, "branch")
-        ref = "refs/heads/$(source["branch"])"
+        rev = spec["rev"]
+    elseif haskey(spec, "branch")
+        ref = "refs/heads/$(spec["branch"])"
         rev = git_ref2rev(url, ref)
-    elseif haskey(source, "tag")
-        ref = "refs/tags/$(source["tag"])"
+    elseif haskey(spec, "tag")
+        ref = "refs/tags/$(spec["tag"])"
         rev = git_ref2rev(url, ref)
     end
 
-    fetcher_args = subset(source, "url")
+    fetcher_args = subset(spec, "url")
     fetcher_args["rev"] = rev
     if builtin && submodule
         # TODO nix 2.4 fetchGit

@@ -21,6 +21,8 @@ function print(io, xs...)
     return nothing
 end
 
+print(io, x) = print(io, string(x)) 
+
 print(io, x::Union{AbstractChar,AbstractString}) = Base.print(io, '"', x, '"')
 
 print(io, x::Union{Integer,AbstractFloat}) = Base.print(io, x)

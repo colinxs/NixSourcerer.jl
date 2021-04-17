@@ -87,7 +87,7 @@ in stdenv.mkDerivation ({
 
     # TODO lazy artifacts
     # TODO resolve?
-    # julia -e 'using Pkg; Pkg.instantiate()'
+    # julia -e 'using Pkg; Pkg.instantiate(update_registry=false)'
   '';
 
   installPhase = ''
