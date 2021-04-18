@@ -23,12 +23,12 @@ let
   targetArch = targetPlatform.cpu.name;
   targetOs = targetPlatform.kernel.name;
 
-  doFetch = {git-tree-sha1, sha256, url}:
+  doFetch = git-tree-sha1: downloads:
     let
-      src = fetchurl { inherit sha256 url; };
+      # TODO multiple sha256? Multiple urls if same sha256?
+      inherit (lib.head downloads) sha256 url;
     in
-    # { "${git-tree-sha1}" = "file://${src}"; };
-    { "${git-tree-sha1}" = src; };
+    fetchurl { inherit sha256 url; };
 
   getOverrideable = entry:
     if isList entry then
@@ -41,23 +41,18 @@ let
       then
         {}
       else
-        # map (v: doFetch { inherit (v) sha256 url; inherit (entry) git-tree-sha1; }) entry.download;
         { "${entry.git-tree-sha1}" = entry.download; };
-  
   getOverrideableFromArtifactsFile = f: getOverrideable (attrValues (lib.importTOML f));
+
   overrideable = builtins.filter (x: x != {}) (lib.lists.flatten (map getOverrideableFromArtifactsFile juliaArtifactsFiles_));
-  merged = lib.foldAttrs (n: a: trace n (n ++ a)) [] overrideable;
-  newArtifacts = trace merged merged;
+  merged = lib.foldAttrs (n: a: n ++ a) [] overrideable;
+  newArtifacts = lib.mapAttrs doFetch merged;
 
   format = formats.toml { };
-  # overrides = lib.lists.flatten (map fn (attrValues (lib.importTOML juliaArtifactsFile)));
-  # newArtifacts = lib.foldl' (a: b: a // b) {} overrides;
-  # newArtifacts = trace (map typeOf overrides) (lib.importTOML juliaArtifactsFile);
-  # overrides = lib.lists.flatten (lib.mapAttrsToList fn (lib.importTOML juliaArtifactsFile));
 in
 # writeText "output${builtins.toString builtins.currentTime}" json
   # writeText "output" json
-format.generate "Overrides.toml" merged
+format.generate "Overrides.toml" newArtifacts
 
 # stdenv.mkDerivation ({
 # } // (builtins.removeAttrs args [

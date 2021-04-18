@@ -1,11 +1,40 @@
+module M
+
 using Pkg
 using Pkg: pkg_server
-using Pkg.Types: PackageInfo, Context
+using Pkg.Types: Context, RegistrySpec, VersionNumber
 using Pkg.MiniProgressBars
 using TOML
-using Base: UUID
+using Base: UUID, SHA1
 using NixSourcerer
-using NixSourcerer: Source
+
+const ARCHIVE_FETCHER = "builtins.fetchTarball"
+const GIT_FETCHER = "fetchgit"
+const JULIA_PKG_FETCHER = joinpath(@__DIR__, "./fetch-julia-package.nix")
+
+struct Fetcher
+    name::String
+    args::Dict{String,Any}
+end
+
+Base.@kwdef mutable struct PackageInfo
+    uuid::UUID
+    name::String
+    version::VersionNumber
+    tree_hash::SHA1
+    depot::String
+    path::String
+    is_tracking_path::Bool
+    is_tracking_repo::Bool
+    is_tracking_registry::Bool
+    registries::Vector{RegistrySpec} = RegistrySpec[]
+    artifacts::Dict{String,Any} = Dict{String,Any}()
+    repos::Vector{String} = String[]
+    archives::Vector{String} = String[]
+    fetcher::Union{Fetcher,Nothing} = nothing 
+end
+
+using NixSourcerer: Source, Nix
 
 # TODO move to NixSourcerer?
 function get_archive_url_for_version(url::String, ref)
@@ -21,176 +50,185 @@ function get_pkg_url(uuid::UUID, tree_hash::String)
     end
 end
 
-function get_repos_from_registry(registries::Vector{RegistrySpec}, uuid::UUID)
-    repos = Set{String}()
-    uuidstr = string(uuid)
-    for registry in registries
-        known = TOML.parsefile(joinpath(registry.path, "Registry.toml"))["packages"]
-        if haskey(known, uuidstr)
-            info = TOML.parsefile(joinpath(registry.path, known[uuidstr]["path"], "Package.toml"))
-            push!(repos, info["repo"])
+function get_source_path(ctx::Context, name::String, uuid::UUID, tree_hash::SHA1) 
+    spec = Pkg.Types.PackageSpec(; name, uuid, tree_hash)
+    path = Pkg.Operations.source_path(ctx, spec)
+    for depot in DEPOT_PATH
+        if startswith(normpath(path), normpath(depot))
+            return depot, relpath(normpath(path), normpath(depot))
         end
     end
-    return sort!(collect(repos))
+    return nothing
 end
 
-function load_package_urls(ctx::Context)
-    alldeps = Pkg.dependencies(ctx)
-    deps = Dict{UUID,PackageInfo}()
-    archives = Dict{UUID,Vector{String}}()
-    repos = Dict{UUID,Vector{String}}()
-    registries = Pkg.Types.collect_registries()
-    for (uuid, pkg) in alldeps
-        repos[uuid] = String[]
-        archives[uuid] = String[]
+function load_artifacts!(info::PackageInfo)
+    artifacts_file = Pkg.Artifacts.find_artifacts_toml(joinpath(info.depot, info.path))
+    if artifacts_file !== nothing
+        for (k, v) in TOML.parsefile(artifacts_file)
+            info.artifacts[k] = v
+        end
+    end
+    return info
+end
 
+function load_registry_info!(infos::Vector{PackageInfo})
+    for registry in Pkg.Types.collect_registries()
+        known = TOML.parsefile(joinpath(registry.path, "Registry.toml"))["packages"]
+        for info in infos
+            if info.is_tracking_registry
+                uuid = string(info.uuid)
+                if haskey(known, uuid) 
+                    repo = TOML.parsefile(joinpath(registry.path, known[uuid]["path"], "Package.toml"))["repo"]
+                    push!(info.repos, repo)
+                    push!(info.registries, registry) 
+                end
+            end
+        end
+    end
+    return infos
+end
+
+function load_infos(ctx::Context)
+    alldeps = Pkg.dependencies(ctx)
+    infos = PackageInfo[]
+    for (uuid, pkg) in alldeps
         # TODO version from Project.toml?
         if Pkg.Types.is_stdlib(uuid, VERSION)
             continue
-        elseif pkg.is_tracking_registry
-            push!(archives[uuid], get_pkg_url(uuid, pkg.tree_hash))
-            for repo in get_repos_from_registry(registries, uuid)
-                push!(repos[uuid], repo) 
-                url = get_archive_url_for_version(repo, pkg.tree_hash)
-                if url !== nothing
-                    push!(archives[uuid], url)
-                end
-            end
-        elseif pkg.is_tracking_repo
-            push!(repos[uuid], pkg.git_source)
         elseif pkg.is_tracking_path
             error("Package $(pkg.name) ($(uuid)) is tracking a path")
         else
-            error("Package $(pkg.name) ($(uuid)) is has no known source") 
+            tree_hash = SHA1(pkg.tree_hash)
+            depot, path = get_source_path(ctx, pkg.name, uuid, tree_hash)
+            info = PackageInfo(; 
+                uuid, 
+                pkg.name, 
+                pkg.version,
+                tree_hash, 
+                depot,
+                path,
+                pkg.is_tracking_path,
+                pkg.is_tracking_repo,
+                pkg.is_tracking_registry
+            )
+
+            if pkg.is_tracking_repo
+                push!(info.repos, pkg.git_source)
+            end
+
+            load_artifacts!(info)
+            
+            push!(infos, info)
         end
-
-        deps[uuid] = alldeps[uuid]
     end
-    return (; archives, repos, deps)
+
+    load_registry_info!(infos)
+
+    return infos 
 end
 
-function get_nix_source(fetcher, args)
-    cmd = pipeline(`nix-prefetch $fetcher --hash-algo sha256 --output nix $args`, stderr=devnull)
-    return strip(read(cmd, String))
+function fetch_sha256(fetcher::Fetcher)
+    args = String[]
+    for (k, v) in fetcher.args
+        push!(args, "--$(k)")
+        push!(args, string(v))
+    end
+    cmd = `nix-prefetch $(fetcher.name) --hash-algo sha256 --output raw $(args)`
+    return strip(read(pipeline(cmd, stderr=devnull), String))
 end
 
-function get_source_path(ctx::Context, pkg::PackageInfo)
-    spec = Pkg.Types.PackageSpec(name=pkg.name, uuid=UUID(pkg.uuid), tree_hash = Base.SHA1(pkg.tree_hash))
-    Pkg.Operations.source_path(ctx, spec)
-end
 
 gen_name(pkg::PackageInfo) = "$(pkg.name)-$(pkg.version)"
 
-function generate_sources(archives, repos, deps_to_install::Dict{UUID,PackageInfo}; ntasks = 5)
+function load_fetchers!(ctx::Context, infos::Vector{PackageInfo}; ntasks::Integer = 4) 
     Base.Experimental.@sync begin
     # @sync begin
+        # TODO typed
         jobs = Channel(ntasks)
         results = Channel(ntasks)
 
         @async begin
-            for (uuid, pkg) in deps_to_install
-                put!(jobs, (uuid, pkg))
+            for info in infos 
+                fetchers = Fetcher[]
+                
+                push!(fetchers, Fetcher(JULIA_PKG_FETCHER, Dict("uuid" => info.uuid, "treeHash" => info.tree_hash)))
+                for url in info.archives 
+                    push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url", info.url))) 
+                end
+                for repo in info.repos 
+                    push!(fetchers, Fetcher(GIT_FETCHER, Dict("url" => repo, "rev" => info.tree_hash)))
+                end
+                put!(jobs, (info, fetchers)) 
             end
         end
 
         for i=1:ntasks
             @async begin
-                for (uuid, pkg) in jobs
-                    src = nothing
-
-                    for url in archives[uuid]
+                for (info, fetchers) in jobs 
+                    selected = nothing
+                    for fetcher in fetchers 
                         try
-                            # NOTE nixpkgs.fetchzip doesn't know how to handle archives
-                            # without a suffix like those from pkg server
-                            # src = get_nix_source("builtins.fetchTarball", ["--url", url])
-                            # src = get_nix_source("builtins.fetchTarball", ["--url", url])
-                            spec = Dict("url" => url, "builtin" => true)
-                            src = NixSourcerer.file_handler(gen_name(pkg), spec)
+                            fetcher.args["sha256"] = fetch_sha256(fetcher) 
+                            selected = fetcher
                             break
                         catch e
                             @error sprint(showerror, e)
                             continue
                         end
                     end
-
-                    if src === nothing
-                        for repo in repos[uuid]
-                            try
-                                # src = get_nix_source("fetchgit", ["--url", repo, "--rev", pkg.tree_hash])
-                                spec = Dict("url" => repo, "rev" => pkg.tree_hash, "builtin" => false)
-                                src = NixSourcerer.git_handler(gen_name(pkg), spec)
-                                break
-                            catch e
-                                @error e
-                                continue
-                            end
-                        end
-                    end
-
-                    if !(src === nothing)
-                        src.meta["name"] = pkg.name
-                        src.meta["version"] = pkg.version
-                        src.meta["tree_hash"] = pkg.tree_hash
-                    end
-
-                    put!(results, (uuid, src))
+                    put!(results, (;info, fetcher=selected))
                 end
             end
         end
 
         bar = MiniProgressBar(; indent=2, header = "Progress", color = Base.info_color(),
-                                percentage=false, always_reprint=true, max = length(deps_to_install))
+                                percentage=false, always_reprint=true, max = length(infos))
         try
             start_progress(stdout, bar)
-            manifest = NixSourcerer.Manifest()
-            for i=1:length(deps_to_install)
+            packages = Dict()
+            for i=1:length(infos)
                 bar.current = i
-                uuid, src = take!(results)
-                if src === nothing 
-                    error("No sources for UUID '$(uuid)'")
-                else
-                    print_progress_bottom(stdout)
-                    show_progress(stdout, bar)
+
+                r = take!(results)
+                if r !== nothing
+                    r.info.fetcher = r.fetcher
                 end
-                manifest.sources[string(uuid)] = src
+
+                print_progress_bottom(stdout)
+                show_progress(stdout, bar)
             end
 
-            return manifest 
+            for info in infos 
+                if info.fetcher === nothing
+                    error("Package with UUID '$(info.uuid)' has no sources")
+                end
+            end
+
+            return infos 
         finally
             end_progress(stdout, bar)
             close(jobs)
         end
     end
-
 end
 
-function generate_nix_expression(sources::Dict{UUID,})
-    str = sprint() do io
-        print(io, "{\n")
-        for (uuid, src) in sources
-            print(io, '"', uuid, '"')
-            print(io, " = ")
-            print(io, src)
-            print(io, ";\n")
-        end
-        print(io, "}")
-    end
-    return str
-end
+function generate_overrides(infos::Vector{PackageInfo})
+    artifacts = Dict{String,Vector
 
+
+# TODO pass in registries
 function generate(package)
-    archives, repos, deps = Pkg.Operations.with_temp_env(package) do
-        load_package_urls(Context())
+    meta = Dict{String,Any}()
+    meta["pkgServer"] = isnothing(Pkg.pkg_server()) ? "" : Pkg.pkg_server()
+
+    Pkg.Operations.with_temp_env(package) do
+        ctx = Context()
+        infos = load_infos(Context())
+        load_fetchers!(ctx, infos) 
     end
-
-    manifest = generate_sources(archives, repos, deps)
-
-    # expr = generate_nix_expression(sources)
-
-    # write(joinpath(@__DIR__, "./Example.nix"), expr)
-    NixSourcerer.write_manifest(manifest, joinpath(package, NixSourcerer.MANIFEST_FILE_NAME))
-
-    return manifest
 end
-manifest = generate(joinpath(@__DIR__, "../testenv"))
+
+end
+
+sources = M.generate(joinpath(@__DIR__, "../testenv"))
 

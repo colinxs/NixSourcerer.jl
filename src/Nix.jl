@@ -6,34 +6,34 @@ end
 
 NixText(c::AbstractChar) = NixText(string(c))
 
-print(io, x::NixText) = Base.print(io, x.s)
+print(io::IO, x::NixText) = Base.print(io, x.s)
 
-function print(x)
-    io = IOBuffer()
-    print(io, x)
-    return String(take!(io))
+function print(xs...)
+    sprint() do io
+        print(io, xs...)
+    end
 end
 
-function print(io, xs...)
+function print(io::IO, xs...)
     for x in xs
         print(io, x)
     end
     return nothing
 end
 
-print(io, x) = print(io, string(x)) 
+print(io::IO, x) = print(io, string(x)) 
 
-print(io, x::Union{AbstractChar,AbstractString}) = Base.print(io, '"', x, '"')
+print(io::IO, x::Union{AbstractChar,AbstractString}) = Base.print(io, '"', x, '"')
 
-print(io, x::Union{Integer,AbstractFloat}) = Base.print(io, x)
+print(io::IO, x::Union{Integer,AbstractFloat}) = Base.print(io, x)
 
-print(io, x::Bool) = Base.print(io, x ? "true" : "false")
+print(io::IO, x::Bool) = Base.print(io, x ? "true" : "false")
 
-print(io, x::Nothing) = Base.print(io, "null")
+print(io::IO, x::Nothing) = Base.print(io, "null")
 
-print(io, x::Symbol) = Base.print(io, string(x))
+print(io::IO, x::Symbol) = Base.print(io, string(x))
 
-function print(io, x::Pair)
+function print(io::IO, x::Pair)
     print(io, x.first)
     write(io, " = ")
     print(io, x.second)
@@ -41,7 +41,7 @@ function print(io, x::Pair)
     return nothing
 end
 
-function print(io, x::AbstractDict; sort::Bool = false)
+function print(io::IO, x::AbstractDict; sort::Bool = false)
     write(io, '{')
     ks = sort ? Base.sort(collect(keys(x))) : keys(x)
     for k in ks
@@ -51,7 +51,7 @@ function print(io, x::AbstractDict; sort::Bool = false)
     return nothing
 end
 
-function print(io, xs::Union{AbstractVector,Tuple})
+function print(io::IO, xs::Union{AbstractVector,Tuple})
     write(io, '[')
     for x in xs
         write(io, " (")
