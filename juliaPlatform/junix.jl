@@ -7,6 +7,7 @@ using Base: UUID
 using NixSourcerer
 using NixSourcerer: Source
 
+# TODO move to NixSourcerer?
 function get_archive_url_for_version(url::String, ref)
     if (m = match(r"https://github.com/(.*?)/(.*?).git", url)) !== nothing
         return "https://api.github.com/repos/$(m.captures[1])/$(m.captures[2])/tarball/$(ref)"
@@ -187,7 +188,7 @@ function generate(package)
     # expr = generate_nix_expression(sources)
 
     # write(joinpath(@__DIR__, "./Example.nix"), expr)
-    NixSourcerer.write_manifest(manifest, joinpath(@__DIR__, "./Example.nix"))
+    NixSourcerer.write_manifest(manifest, joinpath(package, NixSourcerer.MANIFEST_FILE_NAME))
 
     return manifest
 end

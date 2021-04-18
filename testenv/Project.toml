@@ -1,3 +1,2 @@
 [deps]
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-UniversalLogger = "5c5e3362-9445-4819-9f95-51c44c51adeb"

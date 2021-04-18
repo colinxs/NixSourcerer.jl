@@ -27,7 +27,7 @@
       julia = murpkgs.julia.latest;
       buildJuliaEnvironment = pkgs.callPackage ./juliaPlatform/buildJuliaEnvironment.nix { inherit julia; };
       buildJuliaPackage = pkgs.callPackage ./juliaPlatform/buildJuliaPackage.nix { inherit buildJuliaEnvironment; };
-      buildArtifacts= pkgs.callPackage ./juliaPlatform/buildArtifacts.nix { };
+      buildOverrides= pkgs.callPackage ./juliaPlatform/buildOverrides.nix { };
       
       juliaProjectFile=./testenv/Project.toml; 
       juliaManifestFile=./testenv/Manifest.toml; 
@@ -47,8 +47,9 @@
       #   src = ./.;
       #   sha256 = pkgs.lib.fakeSha256;
       # }; 
-      defaultPackage."${system}" = buildArtifacts { 
-        juliaArtifactsFile = ./testenv/Artifacts.toml;
+      defaultPackage."${system}" = buildOverrides { 
+        # juliaArtifactsFile = ./testenv/Artifacts.toml;
+        juliaArtifactsFiles = [./testenv/Artifacts.toml ./testenv/Artifacts2.toml];
         # sha256 = pkgs.lib.fakeSha256;
       }; 
     };
