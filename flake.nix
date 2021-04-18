@@ -37,10 +37,32 @@
       
       depot = juliaPlatform.buildJuliaPackage { 
         src = ./.;
+        # src = builtins.path { path=./.; filter = (p: t: p == ./Project.toml); };
+        # src = pkgs.lib.sourceByRegex ./. [ 
+        #   "^Project.toml$"
+        #   "^Manifest.toml$"
+        #   "^src"
+        # ];
+
         juliaRegistries = with inputs; [ general-registry personal-registry ];
         # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
         sha256 = pkgs.lib.fakeSha256;
       }; 
+      # depot = juliaPlatform.buildJuliaDepot { 
+      #   juliaProjectFile = ./testenv/Project.toml;
+      #   juliaManifestFile = ./testenv/Manifest.toml;
+      #   juliaRegistries = with inputs; [ general-registry personal-registry ];
+      #   # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
+      #   sha256 = pkgs.lib.fakeSha256;
+      # }; 
+      
+      
+      # depot = juliaPlatform.buildJuliaPackage { 
+      #   src = ./testenv;
+      #   juliaRegistries = with inputs; [ general-registry personal-registry ];
+      #   # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
+      #   sha256 = pkgs.lib.fakeSha256;
+      # }; 
 
       julia-wrapped = juliaPlatform.buildJuliaWrapper {
         inherit depot julia;
