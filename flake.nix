@@ -36,15 +36,8 @@
       juliaPlatform = callPackage ./julia-platform {};
       
       depot = juliaPlatform.buildJuliaPackage { 
-        src = ./.;
-        # src = builtins.path { path=./.; filter = (p: t: p == ./Project.toml); };
-        # src = pkgs.lib.sourceByRegex ./. [ 
-        #   "^Project.toml$"
-        #   "^Manifest.toml$"
-        #   "^src"
-        # ];
-
-        juliaRegistries = with inputs; [ general-registry personal-registry ];
+        src = ./pkg;
+        juliaRegistries = with inputs; builtins.trace (inputs.personal-registry) [ general-registry personal-registry ];
         # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
         sha256 = pkgs.lib.fakeSha256;
       }; 
@@ -87,7 +80,7 @@
                flake.packages.x86_64-linux.depot.overrideAttrs (_: { sha256=${pkgs.lib.fakeSha256};  })
           '';
           in
-          pkgs.writeScriptBin "update" ''
+          pkgs.writeScriptBin "NixSourcerer" ''
             #!${pkgs.stdenv.shell}
             ${nix-prefetch}/bin/nix-prefetch '${expr}' --hash-algo sha256 --output raw
           '';
