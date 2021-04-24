@@ -34,7 +34,7 @@ jobs:
           nix-env -iA nixUnstable -f '<nixpkgs>'
           echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
 
-      - uses: webfactory/ssh-agent@v0.5
+      - uses: webfactory/ssh-agent@v0.5.2
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
