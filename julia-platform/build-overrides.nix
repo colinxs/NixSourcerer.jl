@@ -9,7 +9,7 @@ in
 , ... } @ args:
 
 let
-  inherit (builtins) trace isList isAttrs hasAttr attrNames attrValues typeOf;
+  inherit (builtins) isList isAttrs hasAttr attrNames attrValues typeOf;
 
   juliaArtifactsFiles_ =
     if juliaArtifactsFiles == [] then

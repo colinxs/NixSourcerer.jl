@@ -34,16 +34,15 @@
     "flake-compat_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1611461076,
-        "narHash": "sha256-ad++dTtMNeitUIKi1c66aTrVJOSf+mdZTrGrXzjDr6Q=",
-        "owner": "BBBSnowball",
+        "lastModified": 1606424373,
+        "narHash": "sha256-oq8d4//CJOrVj+EcOaSXvMebvuTkmBJuT5tzlfewUnQ=",
+        "owner": "edolstra",
         "repo": "flake-compat",
-        "rev": "a565cb46bee9fa856a6c15bc9c3bb947fbb784ec",
+        "rev": "99f1c2157fba4bfe6211a321fd0ee43199025dbf",
         "type": "github"
       },
       "original": {
-        "owner": "BBBSnowball",
-        "ref": "pr-1",
+        "owner": "edolstra",
         "repo": "flake-compat",
         "type": "github"
       }
@@ -112,11 +111,11 @@
     "general-registry": {
       "flake": false,
       "locked": {
-        "lastModified": 1619233142,
-        "narHash": "sha256-07OBiOsUNYaF2PtiJs6PPKkzdflZgqnNsTy/5ObbgNA=",
+        "lastModified": 1619288281,
+        "narHash": "sha256-bZ/vsUzlsmt8/kTiKDZTlc+wIYJEm+FyeKfoBa4G+xE=",
         "owner": "JuliaRegistries",
         "repo": "General",
-        "rev": "43be4377946a6b86b89732dbd391b0fe32621c96",
+        "rev": "b1c81d0a5b440d33cbede8aeca4bd6fc7b35cd31",
         "type": "github"
       },
       "original": {
@@ -203,11 +202,11 @@
       },
       "locked": {
         "dir": "nix-home",
-        "lastModified": 1619148121,
-        "narHash": "sha256-Km9QRVWAqXJcHtBGkcEFF3IZ/RQlwxIIaJ4/GncMaCc=",
+        "lastModified": 1619278054,
+        "narHash": "sha256-SJ97GBvw3OkaEjyekp48Td3qqRlw71JyzLLlN0iQAS4=",
         "ref": "flake",
-        "rev": "0d677257266f278d3c7731148d13871beaff7a9e",
-        "revCount": 186,
+        "rev": "91c7c47a57fe7c832582056cd59095fec9419ae4",
+        "revCount": 187,
         "type": "git",
         "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
       },
@@ -220,11 +219,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1619196108,
-        "narHash": "sha256-IQ9rTOBecscfUrU0qH9jpepsazyjo0q9R98R89dXAGQ=",
+        "lastModified": 1619221025,
+        "narHash": "sha256-bso6y22DPcAqDilUoRqqWWORr7vo0mgNr0bQ+2d70YU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "8d0340aee5caac3807c58ad7fa4ebdbbdd9134d6",
+        "rev": "1df834e6c6e16c21dde13d269b314c2cc223e2f2",
         "type": "github"
       },
       "original": {

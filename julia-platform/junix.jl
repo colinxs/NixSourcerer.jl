@@ -140,7 +140,7 @@ end
 
 gen_name(pkg::PackageInfo) = "$(pkg.name)-$(pkg.version)"
 
-function load_fetchers!(ctx::Context, infos::Vector{PackageInfo}; ntasks::Integer = 4) 
+function select_pkg_fetchers!(ctx::Context, infos::Vector{PackageInfo}; ntasks::Integer = 4) 
     Base.Experimental.@sync begin
     # @sync begin
         # TODO typed
@@ -212,8 +212,110 @@ function load_fetchers!(ctx::Context, infos::Vector{PackageInfo}; ntasks::Intege
     end
 end
 
-function generate_overrides(infos::Vector{PackageInfo})
-    artifacts = Dict{String,Vector
+function select_artifact_fetchers!(ctx::Context, infos::Vector{PackageInfo}; ntasks::Integer = 4) 
+    Base.Experimental.@sync begin
+    # @sync begin
+        # TODO typed
+        jobs = Channel(ntasks)
+        results = Channel(ntasks)
+
+        @async begin
+            for info in infos 
+                fetchers = Fetcher[]
+                
+                push!(fetchers, Fetcher(JULIA_PKG_FETCHER, Dict("uuid" => info.uuid, "treeHash" => info.tree_hash)))
+                for url in info.archives 
+                    push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url", info.url))) 
+                end
+                for repo in info.repos 
+                    push!(fetchers, Fetcher(GIT_FETCHER, Dict("url" => repo, "rev" => info.tree_hash)))
+                end
+                put!(jobs, (info, fetchers)) 
+            end
+        end
+
+        for i=1:ntasks
+            @async begin
+                for (info, fetchers) in jobs 
+                    selected = nothing
+                    for fetcher in fetchers 
+                        try
+                            fetcher.args["sha256"] = fetch_sha256(fetcher) 
+                            selected = fetcher
+                            break
+                        catch e
+                            @error sprint(showerror, e)
+                            continue
+                        end
+                    end
+                    put!(results, (;info, fetcher=selected))
+                end
+            end
+        end
+
+        bar = MiniProgressBar(; indent=2, header = "Progress", color = Base.info_color(),
+                                percentage=false, always_reprint=true, max = length(infos))
+        try
+            start_progress(stdout, bar)
+            packages = Dict()
+            for i=1:length(infos)
+                bar.current = i
+
+                r = take!(results)
+                if r !== nothing
+                    r.info.fetcher = r.fetcher
+                end
+
+                print_progress_bottom(stdout)
+                show_progress(stdout, bar)
+            end
+
+            for info in infos 
+                if info.fetcher === nothing
+                    error("Package with UUID '$(info.uuid)' has no sources")
+                end
+            end
+
+            return infos 
+        finally
+            end_progress(stdout, bar)
+            close(jobs)
+        end
+    end
+end
+
+
+function merge_artifacts(infos::Vector{PackageInfo})
+    all_artifacts = Dict{SHA1,Any}()
+    for info in infos, artifact in values(info.artifacts)
+        elseif artifact isa AbstractVector
+            for x in artifact
+                if x isa AbstractDict && haskey(x, "download") && !get(x, "lazy", false)
+                    append!(downloads, x["download"])
+                end
+            end
+        else
+            error("Invalid Artifacts.toml")
+        end
+    end
+    return all_artifacts
+
+
+
+function _merge_artifact!(all_artifacts::Dict, artifact::Dict)
+    tree_hash = SHA1(artifact["git-tree-sha1"])
+    spec = get(all_artifacts, tree_hash, Dict("download" => []))
+    for attr in ("arch", "os", "libc")
+        if haskey(artifact, attr)
+            spec[attr] = artifact[attr]
+        end
+    end
+    if haskey(artifact, "download") && !get(artifact, "lazy", false)
+        append!(spec["download"], artifact["download"])
+    end
+    return all_artifacts
+end
+
 
 
 # TODO pass in registries
@@ -224,7 +326,7 @@ function generate(package)
     Pkg.Operations.with_temp_env(package) do
         ctx = Context()
         infos = load_infos(Context())
-        load_fetchers!(ctx, infos) 
+        select_pkg_fetchers!(ctx, infos) 
     end
 end
 
