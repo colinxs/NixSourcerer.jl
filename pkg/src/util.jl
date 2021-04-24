@@ -29,8 +29,8 @@ function get_sha256(fetcher_name, fetcherargs)
     return strip(rundebug(cmd, stdout = true))
 end
 
-function get_cargosha256(path, attr)
-    expr = "{ sha256 }: (import $(path) {}).$(attr).cargoDeps.overrideAttrs (_: { cargoSha256 = sha256; })"
+function get_cargosha256(pkg)
+    expr = "{ sha256 }: $(pkg).cargoDeps.overrideAttrs (_: { cargoSha256 = sha256; })"
     return strip(rundebug(`nix-prefetch --hash-algo sha256 --output raw $expr`, stdout=true))
 end
 
@@ -40,7 +40,9 @@ function build_source(fetcher_name, fetcher_args)
 end
 
 function run_julia_script(script_file::AbstractString)
-    cmd = `nix-shell --run "julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)"`
+    shell_file = joinpath(dirname(script_file), "shell.nix")
+    jlcmd = `julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)`
+    cmd = isfile(shell_file) ? `nix-shell --run $jlcmd` : `$jlcmd`
     run(setenv(cmd; dir=dirname(script_file)))
     return nothing
 end

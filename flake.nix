@@ -24,13 +24,15 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, flake-utils, nixpkgs, nix-home, ... }@inputs: 
+  outputs = { self, flake-utils, nix-home, ... }@inputs: 
     flake-utils.lib.eachSystem ["x86_64-linux"] (system:
     let
       name = "NixSourcerer";
-      pkgs = nixpkgs.legacyPackages."${system}";
+      pkgs = inputs.nixpkgs.legacyPackages."${system}";
       murpkgs = nix-home.legacyPackages."${system}".mur;
       julia = murpkgs.julia.latest;
+      
+      nix-prefetch = pkgs.nix-prefetch.override { nix = pkgs.nixFlakes; }; 
 
       callPackage = pkgs.lib.callPackageWith ( pkgs // { inherit julia callPackage; } );
       juliaPlatform = callPackage ./julia-platform {};
@@ -38,24 +40,8 @@
       depot = juliaPlatform.buildJuliaPackage { 
         src = ./pkg;
         juliaRegistries = with inputs; builtins.trace (inputs.personal-registry) [ general-registry personal-registry ];
-        # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
-        sha256 = pkgs.lib.fakeSha256;
+        sha256 = "0rcvv26zkdavg6rfzaxiybi9006ll65f260nv0663rmp0jj3y5sf";
       }; 
-      # depot = juliaPlatform.buildJuliaDepot { 
-      #   juliaProjectFile = ./testenv/Project.toml;
-      #   juliaManifestFile = ./testenv/Manifest.toml;
-      #   juliaRegistries = with inputs; [ general-registry personal-registry ];
-      #   # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
-      #   sha256 = pkgs.lib.fakeSha256;
-      # }; 
-      
-      
-      # depot = juliaPlatform.buildJuliaPackage { 
-      #   src = ./testenv;
-      #   juliaRegistries = with inputs; [ general-registry personal-registry ];
-      #   # sha256 = "1vbf4k5nck4wl73m09p6mbpr0f8rvkbcs21s02h3r9d07wsfwfx7";
-      #   sha256 = pkgs.lib.fakeSha256;
-      # }; 
 
       julia-wrapped = juliaPlatform.buildJuliaWrapper {
         inherit depot julia;
@@ -65,12 +51,11 @@
 
       main = pkgs.writeScriptBin "nix-sourcerer" ''
         #!${pkgs.stdenv.shell}
-        ${julia}/bin/julia --startup-file=no --compile=min -O1 ${./bin/main.jl} "$@"
-      '';
+        ${julia-wrapped}/bin/julia --startup-file=no --compile=min -O1 ${./bin/main.jl} "$@"
+        '';
 
       updateScript = 
         let
-          nix-prefetch = pkgs.nix-prefetch.override { nix = pkgs.nixFlakes; }; 
           expr = ''
             {sha256}:
               let
@@ -89,9 +74,11 @@
         inherit depot updateScript;
         julia = julia-wrapped;
         nix-sourcerer = main;
+        inherit nix-prefetch;
       };
       defaultPackage = julia-wrapped;
       apps."${name}" = flake-utils.lib.mkApp { drv = main; };
+      apps.julia  = flake-utils.lib.mkApp { drv = julia-wrapped; name = "julia"; };
       defaultApp = apps."${name}";
     });
 }

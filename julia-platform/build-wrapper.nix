@@ -81,7 +81,7 @@ let
 
   finalJulia = runCommand "julia-wrapped" { 
       nativeBuildInputs = [makeWrapper]; 
-      buildInputs = extraLibs ++ extraPackages;
+      buildInputs = [ julia ] ++  extraLibs ++ extraPackages;
       passthru = { depots = finalDepots; };
     } ''
     mkdir -p $out/bin
