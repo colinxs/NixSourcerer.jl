@@ -40,10 +40,4 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       
-      - uses: cachix/cachix-action@v8
-        with:
-          name: colinxs 
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-          extraPullNames: nix-community
-
       - run: nix run .#test 
