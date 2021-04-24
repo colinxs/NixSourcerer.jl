@@ -28,14 +28,12 @@ jobs:
             cores = 0
             max-jobs = auto
             experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.PAT }}
     
       - name: Install nixUnstable
         run: |
           nix-env -iA nixUnstable -f '<nixpkgs>'
           echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
 
-      - uses: webfactory/ssh-agent@v0.5.2
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - run: nix run .#test 
+      - name: Run Test
+        run: nix run .#test 

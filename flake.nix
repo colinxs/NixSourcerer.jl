@@ -19,8 +19,9 @@
   };
   
   inputs.nix-home = {
-    # url = "path:/home/colinxs/nix-home";
-    url = "git+ssh://git@github.com/colinxs/home?ref=flake&dir=nix-home";
+    # url = "path:/home/colinxs";
+    # url = "git+ssh://git@github.com/colinxs/home?dir=nix-home";
+    url = github:colinxs/home?dir=nix-home;
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
