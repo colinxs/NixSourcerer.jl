@@ -76,6 +76,12 @@
         #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
         julia --startup-file=no --compile=min -O1 --project=${./pkg} ${./bin/main.jl} "$@"
       '';
+      
+      test = pkgs.writeScriptBin "test" ''
+        #!/usr/bin/env nix-shell 
+        #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
+        julia --startup-file=no --compile=min -O1 --project=${./pkg} -e 'using Pkg; Pkg.test()' 
+      '';
     in rec {
       # defaultPackage = julia-wrapped;
       # packages = {
@@ -87,6 +93,7 @@
 
       defaultApp = apps."nix-sourcerer";
       apps."nix-sourcerer" = flake-utils.lib.mkApp { drv = main; };
+      apps."test" = flake-utils.lib.mkApp { drv = test; };
       # apps.julia  = flake-utils.lib.mkApp { drv = julia-wrapped; name = "julia"; };
     });
 }
