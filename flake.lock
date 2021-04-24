@@ -111,11 +111,11 @@
     "general-registry": {
       "flake": false,
       "locked": {
-        "lastModified": 1619289025,
-        "narHash": "sha256-fVBXR1DR9g+iOk3EZ9xewok8oVhDuk4oMlY2bDXuEMI=",
+        "lastModified": 1619292342,
+        "narHash": "sha256-ViyugED6286P6bHSB8ltceRslKzcqbteLto9WE9neHQ=",
         "owner": "JuliaRegistries",
         "repo": "General",
-        "rev": "262b2e8b7529fff2ac300a4898b0d2c7ed920043",
+        "rev": "5d67b0dec226cdb2d80d474b8f8f7c2e2429f7a1",
         "type": "github"
       },
       "original": {
@@ -204,17 +204,17 @@
         "dir": "nix-home",
         "lastModified": 1619290829,
         "narHash": "sha256-p93LWtyFQRAtzTjB+qbLA0NBFYmQzK4C77zIOgIXakI=",
-        "ref": "flake",
+        "owner": "colinxs",
+        "repo": "home",
         "rev": "09fef0af0778097a8286fd3e1abff42ca48ce935",
-        "revCount": 188,
-        "type": "git",
-        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
+        "type": "github"
       },
       "original": {
         "dir": "nix-home",
+        "owner": "colinxs",
         "ref": "flake",
-        "type": "git",
-        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
+        "repo": "home",
+        "type": "github"
       }
     },
     "nixpkgs": {
