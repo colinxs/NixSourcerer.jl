@@ -16,8 +16,7 @@ jobs:
         with:
           path: |
             ~/.julia/artifacts
-            /nix/store
-            !/nix/store/*.lock
+            ~/.cache/nix
           key: ${{ runner.os }}-${{ hashFiles('**/Project.toml','**/flake.lock') }}
           restore-keys: |
             ${{ runner.os }}-
