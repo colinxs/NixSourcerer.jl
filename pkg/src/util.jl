@@ -42,8 +42,11 @@ end
 function run_julia_script(script_file::AbstractString)
     script_file = abspath(script_file)
     shell_file = joinpath(dirname(script_file), "shell.nix")
-    jlcmd = `julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)`
-    cmd = isfile(shell_file) ? `nix-shell --run '$jlcmd'` : `$jlcmd`
+    cmd = if isfile(shell_file) 
+        `nix-shell --run "julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)"`
+    else
+        `julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)`
+    end
     run(setenv(cmd; dir=dirname(script_file)))
     return nothing
 end
