@@ -19,10 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: cachix/install-nix-action@v12
+      - uses: cachix/install-nix-action@v13
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
-
+          extra_nix_config: |
+            cores = 0
+            max-jobs = auto
+            http-connections = 100
+            experimental-features = nix-command flakes
     
       - name: Install nixUnstable
         run: |
