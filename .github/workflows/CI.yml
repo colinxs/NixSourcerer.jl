@@ -27,6 +27,7 @@ jobs:
             max-jobs = auto
             http-connections = 100
             experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     
       - name: Install nixUnstable
         run: |
