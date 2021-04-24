@@ -50,4 +50,4 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - run: nix run --no-update-lock-file .#test 
+      - run: nix run .#test 
