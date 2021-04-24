@@ -75,12 +75,14 @@
       main = pkgs.writeScriptBin "nix-sourcerer" ''
         #!/usr/bin/env nix-shell 
         #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
+        julia --startup-file=no --compile=min -O1 --project=${./pkg} -e 'using Pkg; Pkg.instantiate()' 
         julia --startup-file=no --compile=min -O1 --project=${./pkg} ${./bin/main.jl} "$@"
       '';
       
       test = pkgs.writeScriptBin "test" ''
         #!/usr/bin/env nix-shell 
         #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
+        julia --startup-file=no --compile=min -O1 --project=${./pkg} -e 'using Pkg; Pkg.instantiate()' 
         julia --startup-file=no --compile=min -O1 --project=${./pkg} -e 'using Pkg; Pkg.test()' 
       '';
     in rec {
