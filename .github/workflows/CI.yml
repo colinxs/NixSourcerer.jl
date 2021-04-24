@@ -34,12 +34,18 @@ jobs:
           nix-env -iA nixUnstable -f '<nixpkgs>'
           echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
 
+      - uses: webfactory/ssh-agent@v0.5
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
         with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+          path: |
+            ~/.julia/artifacts
+            /nix/store
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('pkg/Project.toml') }}
           restore-keys: |
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
