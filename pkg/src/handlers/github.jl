@@ -11,37 +11,37 @@ const GITHUB_SCHEMA = SchemaSet(
     SimpleSchema("submodule", Bool, false),
 )
 
-function github_handler(name::AbstractString, source::AbstractDict)
-    submodule = get(source, "submodule", false)
-    owner = source["owner"]
-    repo = source["repo"]
+function github_handler(name::AbstractString, spec::AbstractDict)
+    submodule = get(spec, "submodule", false)
+    owner = spec["owner"]
+    repo = spec["repo"]
 
-    if haskey(source, "rev")
-        rev = version = source["rev"]
-    elseif haskey(source, "branch")
-        rev = github_get_rev_sha_from_ref(owner, repo, "heads/$(source["branch"])")
-        version = source["branch"]
-    elseif haskey(source, "tag")
-        rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(source["tag"])")
-        version = source["tag"]
-    elseif haskey(source, "release")
-        tag = github_api_get(owner, repo, "releases/$(source["release"])")["tag_name"]
+    if haskey(spec, "rev")
+        rev = version = spec["rev"]
+    elseif haskey(spec, "branch")
+        rev = github_get_rev_sha_from_ref(owner, repo, "heads/$(spec["branch"])")
+        version = spec["branch"]
+    elseif haskey(spec, "tag")
+        rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
+        version = spec["tag"]
+    elseif haskey(spec, "release")
+        tag = github_api_get(owner, repo, "releases/$(spec["release"])")["tag_name"]
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
-        version = source["release"]
+        version = spec["release"]
     end
 
     if submodule
-        new_source = subset(
-            source, keys(DEFAULT_SCHEMA_SET)..., "rev", "submodule", "builtin"
+        new_spec = subset(
+            spec, keys(DEFAULT_SCHEMA_SET)..., "rev", "submodule", "builtin"
         )
-        new_source["url"] = "https://github.com/$(owner)/$(repo).git"
-        source = git_handler(name, new_source)
+        new_spec["url"] = "https://github.com/$(owner)/$(repo).git"
+        source = git_handler(name, new_spec)
         source.version = version
         return source
     else
-        new_source = subset(source, keys(DEFAULT_SCHEMA_SET)...)
-        new_source["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
-        source = archive_handler(name, new_source)
+        new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
+        new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
+        source = archive_handler(name, new_spec)
         return Source(;
             pname=name,
             version,

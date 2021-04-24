@@ -1,4 +1,4 @@
-module TestGit
+module TestGitHub
 
 include("preamble.jl")
 

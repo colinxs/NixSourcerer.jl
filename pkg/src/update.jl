@@ -40,12 +40,12 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
     if haskey(config, "names")
         names = config["names"] 
         for name in config["names"] 
-            if !haskey(package.project.sources, name) 
+            if !haskey(package.project.specs, name) 
                 nixsourcerer_error("Key $name missing from $(package.project_file)")
             end
         end
     else
-        names = keys(package.project.sources)
+        names = keys(package.project.specs)
     end
 
     workers = length(names) == 1 ? 1 : get(config, "workers", 1)::Integer
@@ -64,10 +64,10 @@ end
 function update!(package::Package, name::AbstractString)
     @info "Updating '$name'"
     try
-        project_source = package.project.sources[name]
-        manifest_source = HANDLERS[project_source["type"]](name, project_source)
+        project_spec = package.project.specs[name]
+        manifest_source = HANDLERS[project_spec["type"]](name, project_spec)
 
-        merge_recursively!(manifest_source.meta, get(project_source, "meta", Dict()))
+        merge_recursively!(manifest_source.meta, get(project_spec, "meta", Dict()))
 
         package.manifest.sources[name] = manifest_source
     catch

@@ -1,7 +1,11 @@
-{ pkgs ? import <nixpkgs> { }}:
+{ system ? builtins.currentSystem, home ? import <home> }:
 
+let
+  pkgs = home.legacyPackages."${system}";
+in
 pkgs.mkShell {
   buildInputs = with pkgs; [
+    mur.julia.latest
     git
     nix
     nix-prefetch

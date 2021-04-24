@@ -83,11 +83,11 @@ end
 
 Base.keys(schema::SimpleSchema) = (schema.key,)
 
-function validate(schema::SimpleSchema, source)
+function validate(schema::SimpleSchema, spec)
     key = schema.key
-    if haskey(source, key)
+    if haskey(spec, key)
         T = schema.type
-        V = typeof(source[key])
+        V = typeof(spec[key])
         if !(V <: T)
             nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V")
         end
@@ -104,12 +104,12 @@ end
 
 Base.keys(schema::ExclusiveSchema) = schema.keys
 
-function validate(schema::ExclusiveSchema, source)
-    idx = findfirst(k -> haskey(source, k), schema.keys)
+function validate(schema::ExclusiveSchema, spec)
+    idx = findfirst(k -> haskey(spec, k), schema.keys)
     if idx !== nothing
         key = schema.keys[idx]
         T = schema.types[idx]
-        V = typeof(source[key])
+        V = typeof(spec[key])
         if !(V <: T)
             nixsourcerer_error("Expected key \"$key\" to be of type $T, got $V.")
         end
@@ -132,16 +132,16 @@ const DEFAULT_SCHEMA_SET = SchemaSet(
     SimpleSchema("meta", Dict, false),
 )
 
-function validate(set::SchemaSet, source)
+function validate(set::SchemaSet, spec)
     augmented = SchemaSet(DEFAULT_SCHEMA_SET.schemas..., set.schemas...)
-    check_unknown_keys(augmented, source)
+    check_unknown_keys(augmented, spec)
     for schema in augmented.schemas
-        validate(schema, source)
+        validate(schema, spec)
     end
 end
 
-function check_unknown_keys(set::SchemaSet, source)
-    unknown = setdiff(keys(source), keys(set))
+function check_unknown_keys(set::SchemaSet, spec)
+    unknown = setdiff(keys(spec), keys(set))
     if length(unknown) > 0
         nixsourcerer_error("Unknown key(s): $(Tuple(unknown))")
     end
@@ -156,23 +156,23 @@ end
 const PROJECT_FILE_NAME = "NixProject.toml"
 
 struct Project
-    sources::Dict{String,Any}
+    specs::Dict{String,Any}
 end
 
 Project() = Project(Dict{String,Any}())
 
 function validate(project::Project)
-    for (name, source) in project.sources
+    for (name, spec) in project.specs
         try
-            if !haskey(source, "type")
+            if !haskey(spec, "type")
                 nixsourcerer_error("\"type\" not specified")
-            elseif !haskey(SCHEMAS, source["type"])
-                nixsourcerer_error("Unknown type \"$(source["type"])\"")
+            elseif !haskey(SCHEMAS, spec["type"])
+                nixsourcerer_error("Unknown type \"$(spec["type"])\"")
             else
-                validate(SCHEMAS[source["type"]], source)
+                validate(SCHEMAS[spec["type"]], spec)
             end
         catch e
-            nixsourcerer_error("Could not parse source \"$name\": ", sprint(showerror, e))
+            nixsourcerer_error("Could not parse spec \"$name\": ", sprint(showerror, e))
             rethrow()
         end
     end
@@ -191,7 +191,7 @@ end
 
 function write_project(project::Project, project_file::AbstractString=PROJECT_FILE_NAME)
     open(project_file, "w") do io
-        TOML.print(io, project.sources)
+        TOML.print(io, project.specs)
     end
 end
 
@@ -264,7 +264,7 @@ function write_package(package::Package)
     # TODO sort keys?
     # write_project(package.project, package.project_file)
     for name in keys(package.manifest.sources)
-        if !haskey(package.project.sources, name)
+        if !haskey(package.project.specs, name)
             delete!(package.manifest.sources, name)
         end
     end

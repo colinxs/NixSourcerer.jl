@@ -46,4 +46,4 @@ const HANDLERS = Dict(
     "git" => git_handler,
 )
 
-end # modulegit@github.com:colinxs/NixSourcerer.jl.git
+end # module

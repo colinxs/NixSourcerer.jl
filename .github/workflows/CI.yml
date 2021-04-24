@@ -18,13 +18,17 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+
       - uses: cachix/install-nix-action@v12
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
+
+    
+      - name: Install nixUnstable
+        run: |
+          nix-env -iA nixUnstable -f '<nixpkgs>'
+          echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
+
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
@@ -35,7 +39,11 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-      - uses: julia-actions/julia-buildpkg@v1
-      # - uses: julia-actions/julia-runtest@v1
-      # TODO --pure, needs murpkgs
-      - run: nix-shell --keep NIX_PATH --keep NIX_SSL_CERT_FILE --run 'julia --project -e "using Pkg; Pkg.test()"'
+      
+      - uses: cachix/cachix-action@v8
+        with:
+          name: colinxs 
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          extraPullNames: nix-community
+
+      - run: nix run .#test 
