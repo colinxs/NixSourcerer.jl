@@ -5,17 +5,10 @@ on:
   - workflow_dispatch 
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ github.event_name }}
+    runs-on: ubuntu-latest 
     strategy:
       fail-fast: false
-      matrix:
-        version: 
-          - "1"
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
     steps:
       - uses: actions/checkout@v2
       
@@ -26,7 +19,7 @@ jobs:
           path: |
             ~/.julia/artifacts
             /nix/store
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('pkg/Project.toml') }}
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml','**/flake.lock') }}
           restore-keys: |
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
@@ -38,7 +31,6 @@ jobs:
           extra_nix_config: |
             cores = 0
             max-jobs = auto
-            http-connections = 100
             experimental-features = nix-command flakes
     
       - name: Install nixUnstable
