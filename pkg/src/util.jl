@@ -34,6 +34,8 @@ function get_cargosha256(pkg)
     return strip(rundebug(`nix-prefetch --hash-algo sha256 --output raw $expr`, stdout=true))
 end
 
+# TODO may actually want to use <nixpkgs>
+# Consider doing only if nixpkgs not on NIX_PATH
 function build_source(fetcher_name, fetcher_args)
     expr = "(with $(nixpkgs()); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
     return run(pipeline(`nix eval $expr`; stdout=devnull))
