@@ -27,13 +27,14 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     elseif haskey(spec, "release")
         tag = github_api_get(owner, repo, "releases/$(spec["release"])")["tag_name"]
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
-        version = spec["release"]
+        version = tag 
+    else
+        nixsourcerer_error("Unknown spec: ", string(spec))
     end
 
     if submodule
-        new_spec = subset(
-            spec, keys(DEFAULT_SCHEMA_SET)..., "rev", "submodule", "builtin"
-        )
+        new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
+        new_spec["rev"] = rev
         new_spec["url"] = "https://github.com/$(owner)/$(repo).git"
         source = git_handler(name, new_spec)
         source.version = version

@@ -24,6 +24,8 @@ function git_handler(name, spec)
     elseif haskey(spec, "tag")
         ref = "refs/tags/$(spec["tag"])"
         rev = git_ref2rev(url, ref)
+    else
+        nixsourcerer_error("Unknown spec: ", string(spec))
     end
 
     fetcher_args = subset(spec, "url")
@@ -36,10 +38,11 @@ function git_handler(name, spec)
         fetcher_args["ref"] = ref
         # TODO
         # Force build since nix-prefetch doesn't built builtins.fetchGit
-        build_source(fetcher_name, fetcher_args)
+        # build_source(fetcher_name, fetcher_args)
     else
         # TODO fetchgit doesn't have ref option
         fetcher_name = "pkgs.fetchgit"
+        fetcher_args["fetchSubmodules"] = submodule
         fetcher_args["sha256"] = get_sha256(fetcher_name, fetcher_args)
     end
 
