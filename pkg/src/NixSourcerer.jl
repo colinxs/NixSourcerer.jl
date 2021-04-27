@@ -46,4 +46,6 @@ const HANDLERS = Dict(
     "git" => git_handler,
 )
 
+const DEFAULT_NIX = joinpath(@__DIR__, "../../default.nix")
+
 end # module

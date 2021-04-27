@@ -35,8 +35,12 @@ function get_cargosha256(pkg)
 end
 
 function build_source(fetcher_name, fetcher_args)
-    expr = "(with (import <nixpkgs> {}); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
+    expr = "(with $(nixpkgs()); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
     return run(pipeline(`nix eval $expr`; stdout=devnull))
+end
+
+function nixpkgs(args::AbstractDict=Dict())
+    "(import (import $(DEFAULT_NIX)).inputs.nixpkgs $(Nix.print(args)))"
 end
 
 function run_julia_script(script_file::AbstractString)

@@ -214,8 +214,15 @@ has_manifest(dir::AbstractString) = isfile(joinpath(dir, MANIFEST_FILE_NAME))
 function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
     manifest_file = abspath(manifest_file)
     fields = ["pname", "version", "name", "fetcherName", "fetcherArgs", "meta"]
-    expr = """(with (import <nixpkgs> {}).lib; mapAttrs (n: v: getAttrs [$(join(map(s -> "\"$(s)\"", fields), ' '))] v) (import "$(manifest_file)" {}))"""
-    raw = strip(read(`nix eval --json $expr`, String))
+    expr = """
+        with builtins; 
+        let
+            fields = [$(join(map(s -> "\"$(s)\"", fields), ' '))];
+            getFields = _: v: foldl' (a: b: a // b) {} (map (n: { "\${n}" = v."\${n}"; }) fields);
+        in
+        mapAttrs getFields (import "$(manifest_file)" {})
+    """
+    raw = strip(read(`nix eval --json "($expr)"`, String))
     json = JSON.parse(raw)
 
     manifest = Manifest()
