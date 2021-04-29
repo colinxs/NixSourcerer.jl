@@ -5,7 +5,7 @@ let
 in
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    mur.julia.latest
+    mur.julia-bin.latest
     git
     nix
     nix-prefetch
