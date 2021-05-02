@@ -38,23 +38,23 @@
       # callPackage = pkgs.lib.callPackageWith ( pkgs // { inherit julia callPackage; } );
       # juliaPlatform = callPackage ./julia-platform {};
       
-      # depot = juliaPlatform.buildJuliaPackage { 
-      #   src = ./pkg;
-      #   juliaRegistries = with inputs; [ general-registry personal-registry ];
-      #   # sha256 = "0rcvv26zkdavg6rfzaxiybi9006ll65f260nv0663rmp0jj3y5sf";
-      #   sha256 = pkgs.lib.fakeSha256;
-      # }; 
+      depot = juliaPlatform.buildJuliaPackage { 
+        src = ./pkg;
+        juliaRegistries = with inputs; [ general-registry personal-registry ];
+        # sha256 = "0rcvv26zkdavg6rfzaxiybi9006ll65f260nv0663rmp0jj3y5sf";
+        sha256 = pkgs.lib.fakeSha256;
+      }; 
 
-      # julia-wrapped = juliaPlatform.buildJuliaWrapper {
-      #   inherit depot julia;
-      #   extraPackages = with pkgs; [ git nix nix-prefetch nixpkgs-fmt ];
-      #   defaultDepots = true;
-      # };
+      julia-wrapped = juliaPlatform.buildJuliaWrapper {
+        inherit depot julia;
+        extraPackages = with pkgs; [ git nix nix-prefetch nixpkgs-fmt ];
+        defaultDepots = true;
+      };
 
-      # main = pkgs.writeScriptBin "nix-sourcerer" ''
-      #   #!${pkgs.stdenv.shell}
-      #   ${julia-wrapped}/bin/julia --startup-file=no --compile=min -O1 ${./bin/main.jl} "$@"
-      #   '';
+      main = pkgs.writeScriptBin "nix-sourcerer" ''
+        #!${pkgs.stdenv.shell}
+        ${julia-wrapped}/bin/julia --startup-file=no --compile=min -O1 ${./bin/main.jl} "$@"
+        '';
         
       # updateScript = 
       #   let
@@ -72,12 +72,12 @@
       #       ${nix-prefetch}/bin/nix-prefetch '${expr}' --hash-algo sha256 --output raw
       #     '';
       
-      main = pkgs.writeScriptBin "nix-sourcerer" ''
-        #!/usr/bin/env nix-shell 
-        #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
-        julia --startup-file=no --compile=min -O1 --project=${./pkg} -e 'using Pkg; Pkg.instantiate()' 
-        julia --startup-file=no --compile=min -O1 --project=${./pkg} ${./bin/main.jl} "$@"
-      '';
+      # main = pkgs.writeScriptBin "nix-sourcerer" ''
+      #   #!/usr/bin/env nix-shell 
+      #   #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
+      #   julia --startup-file=no --compile=min -O1 --project=${./pkg} -e 'using Pkg; Pkg.instantiate()' 
+      #   julia --startup-file=no --compile=min -O1 --project=${./pkg} ${./bin/main.jl} "$@"
+      # '';
       
       test = pkgs.writeScriptBin "test" ''
         #!/usr/bin/env nix-shell 
