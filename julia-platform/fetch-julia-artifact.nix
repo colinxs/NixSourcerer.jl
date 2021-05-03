@@ -1,14 +1,16 @@
 { lib, fetchurl, unzip }:
 
-{ uuid
-, treeHash 
+{ treeHash
 , sha256
 , server ? https://pkg.julialang.org
 , ... } @ args:
 
+let
+  version = treeHash;
+in
 lib.overrideDerivation (fetchurl ({
-  name = "${uuid}-${treeHash}.tar.gz";
-  url = "${server}/package/${uuid}/${treeHash}";
+  name = "${treeHash}.tar.gz";
+  url = "${server}/artifact/${treeHash}";
   recursiveHash = true;
   downloadToTemp = true;
   postFetch =
@@ -19,13 +21,14 @@ lib.overrideDerivation (fetchurl ({
       mkdir "$unpackDir"
       cd "$unpackDir"
 
-      renamed="$TMPDIR/${uuid}-${treeHash}.tar.gz"
+      renamed="$TMPDIR/${treeHash}.tar.gz"
       mv "$downloadedFile" "$renamed"
       unpackFile "$renamed"
       mv "$unpackDir" "$out"
     '';
-} // removeAttrs args [ "uuid" "treeHash" "server" ]))
+} // removeAttrs args [ "treeHash" "server" ]))
 # Hackety-hack: we actually need unzip hooks, too
-# TODO???
+# TODO ???
 (x: {nativeBuildInputs = x.nativeBuildInputs++ [unzip];})
+
 
