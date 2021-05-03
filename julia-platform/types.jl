@@ -11,10 +11,19 @@ function Base.show(io::IO, fetcher::M.Fetcher)
     return nothing
 end
 
+function Nix.print(io::IO, fetcher::Fetcher)
+    print(io, '(')
+    print(io, fetcher.name, " ")
+    Nix.print(io, fetcher.args)
+    print(io, ')')
+    return nothing
+end
+
 
 Base.@kwdef mutable struct ArtifactInfo
     name::String
     tree_hash::SHA1
+    path::String = "artifacts/$tree_hash"
     arch::Union{String,Nothing} = nothing
     os::Union{String,Nothing} = nothing
     libc::Union{String,Nothing} = nothing
@@ -22,6 +31,7 @@ Base.@kwdef mutable struct ArtifactInfo
     downloads::Vector{NamedTuple{(:url, :sha256), Tuple{Int64, Int64}}} = []
     fetcher::Union{Fetcher,Nothing} = nothing 
 end
+
 
 Base.@kwdef mutable struct PackageInfo
     uuid::UUID
@@ -39,6 +49,7 @@ Base.@kwdef mutable struct PackageInfo
     archives::Vector{String} = String[]
     fetcher::Union{Fetcher,Nothing} = nothing 
 end
+
 
 Base.@kwdef struct Options
     nworkers::Int = 1

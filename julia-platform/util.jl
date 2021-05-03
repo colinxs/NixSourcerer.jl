@@ -35,6 +35,17 @@ function convert_sha256(data::String, base::Symbol)
 end
 
 function fetch_sha256(fetcher::Fetcher)
+    @info "Fetching $fetcher"
+   
+    expr = """
+        { nixpkgs ? <nixpkgs> }:
+        let 
+            flake = (import $(FLAKE_PATH)); 
+            pkgs = (import nixpkgs { overlays = [ flake.overlay ]; });
+        in 
+        with pkgs; 
+        $(fetcher.name)
+    """
     args = copy(fetcher.args)
     parsed = ["--hash-algo", "sha256", "--output", "raw"]
     if haskey(args, "sha256")
@@ -48,7 +59,8 @@ function fetch_sha256(fetcher::Fetcher)
             push!(parsed, string(v))
         end
     end
-    cmd = `nix-prefetch $(fetcher.name) $(parsed)`
+
+    cmd = `nix-prefetch $expr $(parsed)`
     return strip(read(pipeline(cmd, stderr=devnull), String))
 end
 

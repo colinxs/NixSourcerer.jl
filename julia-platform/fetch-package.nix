@@ -6,6 +6,8 @@
 , server ? https://pkg.julialang.org
 , ... } @ args:
 
+assert builtins.trace "YOOOOO" true;
+
 lib.overrideDerivation (fetchurl ({
   name = "${uuid}-${treeHash}.tar.gz";
   url = "${server}/package/${uuid}/${treeHash}";

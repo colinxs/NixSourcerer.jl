@@ -14,16 +14,16 @@ using HTTP
 using Base: UUID, SHA1
 using NixSourcerer
 
-const ARCHIVE_FETCHER = "builtins.fetchTarball"
-const GIT_FETCHER = "fetchgit"
-const JULIA_PKG_FETCHER = joinpath(@__DIR__, "./fetch-julia-package.nix")
-const JULIA_ARTIFACT_FETCHER = joinpath(@__DIR__, "./fetch-julia-artifact.nix")
 
+const FLAKE_PATH = joinpath(@__DIR__, "../default.nix")
+const ARCHIVE_FETCHER = "builtins.fetchTarball"
+const GIT_FETCHER = "pkgs.fetchgit"
+const JULIA_PKG_FETCHER = "pkgs.juliaPlatform.fetchJuliaPackage" 
+const JULIA_ARTIFACT_FETCHER = "pkgs.juliaPlatform.fetchJuliaArtifact" 
 
 
 include("./types.jl")
 include("./util.jl")
-
 
 
 function load_artifacts!(pkginfo::PackageInfo)
@@ -116,7 +116,6 @@ function select_fetcher(fetchers::Vector{Fetcher})
             return fetcher
         catch e
             @info "Fetcher failed: $fetcher\n$(sprint(showerror, e))"
-            rethrow(e)
             continue
         end
     end
@@ -147,7 +146,6 @@ function select_fetchers(allfetchers::Dict{K,Vector{Fetcher}}, nworkers::Int) wh
 
         bar = MiniProgressBar(; indent=2, header = "Progress", color = Base.info_color(),
                                 percentage=false, always_reprint=true, max = length(allfetchers))
-
         try
             start_progress(stdout, bar)
             selected = Dict{K,FetcherResult}()
@@ -155,7 +153,6 @@ function select_fetchers(allfetchers::Dict{K,Vector{Fetcher}}, nworkers::Int) wh
                 bar.current = i
 
                 key, fetcher = take!(results)
-                # @info "DID TAKE RESULT"
                 selected[key] = fetcher
 
                 # print_progress_bottom(stdout)
@@ -216,6 +213,7 @@ function select_artifact_fetchers!(pkgs::Vector{PackageInfo}, opts::Options)
         elseif opts.pkg_server !== nothing
             url = "$(opts.pkg_server)/artifact/$(artifact_info.tree_hash)"
             if isvalid_url(url)
+                # Prefer using Pkg server even though we don't have a sha256
                 tofetch[artifact_info] = [Fetcher(JULIA_ARTIFACT_FETCHER, Dict(
                     "treeHash" => artifact_info.tree_hash, 
                     "server" => opts.pkg_server
@@ -254,16 +252,43 @@ function select_artifact_fetchers!(pkgs::Vector{PackageInfo}, opts::Options)
     return pkgs
 end
 
-function flatten_artifacts(pkgs::Vector{PackageInfo})
-    flat    = Dict{SHA1,Vector{ArtifactInfo}}()
-    skipped = Dict{SHA1,Vector{ArtifactInfo}}()
-    for pkg in pkgs, (name, artifacts) in pkg.artifacts, artifact in artifacts
-        dict = artifact.fetcher === nothing ? skipped : flat
-        hash = artifact.tree_hash
-        haskey(dict, hash) || (dict[hash] = ArtifactInfo[])
-        push!(dict[hash], artifact)
+function merge_paths(pkgs::Vector{PackageInfo})
+    merged_pkgs = Dict{String,PackageInfo}()
+    merged_artifacts = Dict{String,ArtifactInfo}()
+    for pkg in pkgs
+        @assert !haskey(merged_pkgs, pkg.path)
+        merged_pkgs[pkg.path] = pkg
+
+        for (name, artifacts) in pkg.artifacts, artifact in artifacts
+            haskey(merged_artifacts, artifact.path) && continue
+            artifact.fetcher === nothing && continue
+            merged_artifacts[artifact.path] = artifact
+        end
     end
-    return flat, skipped
+    return (pkgs = merged_pkgs, artifacts = merged_artifacts) 
+end
+
+
+function generate_depot(pkgs::Vector{PackageInfo})
+    # depot_path -> src
+    depot = Dict{String,Any}()
+    merged = merge_paths(pkgs)
+
+    io = IOBuffer()
+    print(io, "{ pkgs ? import <nixpkgs> {} }: {\n")
+    for (path, pkg) in merged.pkgs
+        print(io, path, " = (")
+        Nix.print(io, pkg.fetcher)
+        print(io, ");\n")
+    end
+    for (path, artifact) in merged.artifacts
+        print(io, path, " = (")
+        Nix.print(io, artifact.fetcher)
+        print(io, ");\n")
+    end
+    print(io, '}')
+
+    return String(take!(io))
 end
 
 # TODO pass in registries
@@ -278,14 +303,14 @@ function generate(package)
     Pkg.Operations.with_temp_env(package) do
         ctx = Context()
         pkgs = load_infos(ctx)
-        # select_pkg_fetchers!(pkgs, opts)
+        select_pkg_fetchers!(pkgs, opts)
         select_artifact_fetchers!(pkgs, opts)
-        flat, skipped = flatten_artifacts(pkgs)
+        return generate_depot(pkgs)
     end
 end
 
 end
 
-sources = M.generate(joinpath(@__DIR__, "../testenv"));
+x = M.generate(joinpath(@__DIR__, "../testenv"));
 nothing
 

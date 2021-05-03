@@ -14,6 +14,7 @@ using ArgParse
 
 export update
 export update_package
+export Nix
 
 include("Nix.jl")
 using .Nix
