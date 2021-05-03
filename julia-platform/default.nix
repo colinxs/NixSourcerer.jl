@@ -1,5 +1,6 @@
 { callPackage }:
 
+# TODO rec
 rec {
   fetchJuliaPackage = callPackage ./fetch-package.nix;
   buildJuliaDepot = callPackage ./build-depot.nix { };
