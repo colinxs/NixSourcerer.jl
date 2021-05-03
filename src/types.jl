@@ -240,7 +240,7 @@ function write_manifest(manifest::Manifest, manifest_file::AbstractString=MANIFE
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
     Nix.print(io, manifest.sources; sort = true)
     open(manifest_file, "w") do f
-        Nix.format(f, io)
+        Nix.nixpkgs_fmt(f, io)
     end
 end
 

@@ -12,10 +12,8 @@ function Base.show(io::IO, fetcher::M.Fetcher)
 end
 
 function Nix.print(io::IO, fetcher::Fetcher)
-    print(io, '(')
     print(io, fetcher.name, " ")
-    Nix.print(io, fetcher.args)
-    print(io, ')')
+    Nix.print(io, fetcher.args, sort = true)
     return nothing
 end
 
@@ -58,6 +56,7 @@ Base.@kwdef struct Options
     libc::Union{Set{String},Nothing} = nothing
     lazy_artifacts::Bool = false
     pkg_server::Union{String,Nothing} = pkg_server()
+    force_overwrite::Bool = false
 end
 
 gen_name(pkg::PackageInfo) = "$(pkg.name)-$(pkg.version)"

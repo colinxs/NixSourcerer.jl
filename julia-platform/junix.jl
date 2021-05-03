@@ -269,48 +269,61 @@ function merge_paths(pkgs::Vector{PackageInfo})
 end
 
 
-function generate_depot(pkgs::Vector{PackageInfo})
+function write_depot(pkgs::Vector{PackageInfo}, opts::Options, package_path::String)
     # depot_path -> src
     depot = Dict{String,Any}()
     merged = merge_paths(pkgs)
 
-    io = IOBuffer()
-    print(io, "{ pkgs ? import <nixpkgs> {} }: {\n")
-    for (path, pkg) in merged.pkgs
-        print(io, path, " = (")
+    io = IOBuffer(append=true)
+    write(io, "{ pkgs ? import <nixpkgs> {} }: {\n")
+    for path in sort(collect(keys(merged.pkgs)))
+        pkg = merged.pkgs[path]
+        Nix.print(io, path)
+        write(io, " = (")
         Nix.print(io, pkg.fetcher)
-        print(io, ");\n")
+        write(io, ");\n")
     end
-    for (path, artifact) in merged.artifacts
-        print(io, path, " = (")
+    for path in sort(collect(keys(merged.artifacts)))
+        artifact = merged.artifacts[path]
+        Nix.print(io, path)
+        write(io, " = (")
         Nix.print(io, artifact.fetcher)
-        print(io, ");\n")
+        write(io, ");\n")
     end
-    print(io, '}')
+    write(io, '}')
 
-    return String(take!(io))
+    depotfile_path = normpath(joinpath(package_path, "Depot.nix"))
+    if ispath(depotfile_path) && !opts.force_overwrite 
+        error("$depotfile_path already exists!")
+    else
+        @info "Writing depot to $depotfile_path"
+        open(normpath(joinpath(package_path, "Depot.nix")), "w") do f
+            Nix.nixfmt(f, io)
+        end
+    end
 end
 
 # TODO pass in registries
-function generate(package)
+function generate_depot(package_path::String, opts::Options = Options())
     opts = Options(
-        nworkers = 8,
+        nworkers = 16,
         arch = Set(["x86_64"]),
         os =   Set(["linux"]),
         libc = Set(["glibc"]),
+        force_overwrite = true
     )
 
-    Pkg.Operations.with_temp_env(package) do
+    Pkg.Operations.with_temp_env(package_path) do
         ctx = Context()
         pkgs = load_infos(ctx)
         select_pkg_fetchers!(pkgs, opts)
         select_artifact_fetchers!(pkgs, opts)
-        return generate_depot(pkgs)
+        return write_depot(pkgs, opts, package_path)
     end
 end
 
 end
 
-x = M.generate(joinpath(@__DIR__, "../testenv"));
+x = M.generate_depot(joinpath(@__DIR__, "../testenv"));
 nothing
 

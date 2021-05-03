@@ -62,18 +62,13 @@ function print(io::IO, xs::Union{AbstractVector,Tuple})
     return nothing
 end
 
-function format(io::IO, x)
-    open(`nixpkgs-fmt`, "w", io) do stdin
+nixfmt(io::IO, x) = _format(io, x, `nixfmt`)
+nixpkgs_fmt(io::IO, x) = _format(io, x, `nixpkgs-fmt`)
+function _format(io::IO, x, formatter::Cmd)
+    open(formatter, "w", io) do stdin
         write(stdin, x)
     end
     return nothing
-end
-
-function format(x)
-    str = sprint() do io
-        format(io, x)
-    end
-    return str
 end
 
 end # module
