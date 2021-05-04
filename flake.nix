@@ -46,6 +46,10 @@
           callPackages = pkgs.lib.callPackagesWith callArgs;
           juliaPlatform = callPackages ./julia-platform {};
           
+          depot = juliaPlatform.buildJuliaDepot {
+            depot = import ./testenv/Depot.nix { inherit pkgs; };
+          }; 
+
           main = pkgs.writeScriptBin "nix-sourcerer" ''
             #!/usr/bin/env nix-shell 
             #!nix-shell -i bash ${./shell.nix} --argstr system ${system} --arg home "import ${inputs.nix-home}/nix-home"
@@ -69,7 +73,7 @@
           # };
 
           legacyPackages = {
-            inherit juliaPlatform;
+            inherit juliaPlatform depot;
           };
 
           defaultApp = apps."nix-sourcerer";
@@ -80,13 +84,6 @@
     in outputs // systemOutputs;
 }
 
-
-      # depot = juliaPlatform.buildJuliaPackage { 
-      #   src = ./.;
-      #   juliaRegistries = with inputs; [ general-registry personal-registry ];
-      #   # sha256 = "0rcvv26zkdavg6rfzaxiybi9006ll65f260nv0663rmp0jj3y5sf";
-      #   sha256 = pkgs.lib.fakeSha256;
-      # }; 
 
       # julia-wrapped = juliaPlatform.buildJuliaWrapper {
       #   inherit depot julia;

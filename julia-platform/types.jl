@@ -3,11 +3,10 @@ struct Fetcher
     args::Dict{String,Any}
 end
 
+const FetcherResult = Union{Fetcher,Nothing}
+
 function Base.show(io::IO, fetcher::M.Fetcher)
-    print(io, fetcher.name)
-    for (k, v) in fetcher.args
-        print(io, " --", k, " ", v)
-    end
+    print(io, "nix-prefetch ", fetcher.name, " ", join(parse_fetcher(fetcher), " "))
     return nothing
 end
 
@@ -15,6 +14,29 @@ function Nix.print(io::IO, fetcher::Fetcher)
     print(io, fetcher.name, " ")
     Nix.print(io, fetcher.args, sort = true)
     return nothing
+end
+
+
+Base.@kwdef mutable struct RegistryInfo 
+    name::String
+    uuid::UUID
+    url::String
+    path::String
+end
+
+function collect_registries()
+    map(Pkg.Types.collect_registries()) do regspec
+        RegistryInfo(;regspec.name, uuid = UUID(regspec.uuid), regspec.url, regspec.path)
+    end
+end
+
+function registry_relpath(reg::RegistryInfo)
+    reg = realpath(reg.path)
+    for depot in DEPOT_PATH
+        depot = realpath(depot)
+        startswith(reg, depot) && return relpath(reg, depot)
+    end
+    error("Could not locate $(reg.name) in $DEPOT_PATH")
 end
 
 
@@ -27,13 +49,12 @@ Base.@kwdef mutable struct ArtifactInfo
     libc::Union{String,Nothing} = nothing
     lazy::Bool = false
     downloads::Vector{NamedTuple{(:url, :sha256), Tuple{Int64, Int64}}} = []
-    fetcher::Union{Fetcher,Nothing} = nothing 
 end
 
 
 Base.@kwdef mutable struct PackageInfo
-    uuid::UUID
     name::String
+    uuid::UUID
     version::VersionNumber
     tree_hash::SHA1
     depot::String
@@ -41,11 +62,10 @@ Base.@kwdef mutable struct PackageInfo
     is_tracking_path::Bool
     is_tracking_repo::Bool
     is_tracking_registry::Bool
-    registries::Vector{RegistrySpec} = RegistrySpec[]
+    registries::Vector{RegistryInfo} = RegistrySpec[]
     artifacts::Dict{String,Vector{ArtifactInfo}} = Dict{String,Vector{ArtifactInfo}}()
     repos::Vector{String} = String[]
     archives::Vector{String} = String[]
-    fetcher::Union{Fetcher,Nothing} = nothing 
 end
 
 
@@ -57,8 +77,5 @@ Base.@kwdef struct Options
     lazy_artifacts::Bool = false
     pkg_server::Union{String,Nothing} = pkg_server()
     force_overwrite::Bool = false
+    check_store::Bool = false
 end
-
-gen_name(pkg::PackageInfo) = "$(pkg.name)-$(pkg.version)"
-
-

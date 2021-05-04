@@ -34,9 +34,8 @@ function convert_sha256(data::String, base::Symbol)
     read(`nix-hash --type sha256 $flag $data`, String)
 end
 
-function fetch_sha256(fetcher::Fetcher)
-    @info "Fetching $fetcher"
-   
+function fetch_sha256(fetcher::Fetcher, opts::Options)
+    parsed = parse_fetcher(fetcher, opts)
     expr = """
         { nixpkgs ? <nixpkgs> }:
         let 
@@ -46,32 +45,97 @@ function fetch_sha256(fetcher::Fetcher)
         with pkgs; 
         $(fetcher.name)
     """
+    expr = fetcher.name
+    cmd = `nix-prefetch $expr $(parsed)`
+    x=strip(read(pipeline(cmd, stderr=devnull), String))
+    x
+end
+
+function parse_fetcher(fetcher::Fetcher, opts::Options = Options())
     args = copy(fetcher.args)
     parsed = ["--hash-algo", "sha256", "--output", "raw"]
-    if haskey(args, "sha256")
-         push!(parsed, "--no-compute-hash")
-         args["hash"] = args["sha256"]
-         delete!(args, "sha256")
+    
+    # Hackity hack hack
+    if fetcher.name == BUILTINS_GIT_FETCHER
+        push!(parsed, "--no-compute-hash")
+        if haskey(args, "sha256")
+            delete!(args, "sha256")
+        end
     end
+
+    # Verify the sha256 we already have
+    if haskey(args, "sha256")
+        push!(parsed, "--no-compute-hash")
+        args["hash"] = args["sha256"]
+        delete!(args, "sha256")
+        if opts.check_store
+            push!(parsed, "--check-store")
+        end
+    end
+
     for (k, v) in args
-        push!(parsed, "--$(k)")
+        # Boolean flags
+        if v === true
+            k = "--$(k)"
+            v = nothing
+        elseif v === false
+            k = "--no-$(k)"
+            v = nothing
+        else
+            k = "--$(k)"
+        end
+
+        push!(parsed, string(k)) 
         if v !== nothing
             push!(parsed, string(v))
         end
     end
 
-    cmd = `nix-prefetch $expr $(parsed)`
-    return strip(read(pipeline(cmd, stderr=devnull), String))
+    return parsed
 end
 
-function isvalid_url(url::String)
+
+function is_git_repo(path::String)
     try
-        HTTP.head(url, status_exception = true)
+        GitRepo(path)
         return true
     catch
         return false
     end
 end
 
+function get_repo_meta(path::String)
+    repo = GitRepo(path)
+
+    branch_ref = LibGit2.head(repo);
+    ref = LibGit2.name(branch_ref)
+    shortref = LibGit2.shortname(branch_ref)
+    rev = string(LibGit2.head_oid(repo))
+
+    remote_names = LibGit2.remotes(repo)
+    remote_urls = map(remote_names) do name
+        LibGit2.url(LibGit2.get(LibGit2.GitRemote, repo, name))
+    end
+
+    return (;ref, shortref, rev, remote_names, remote_urls)
+end
+
+
+# function isvalid_url(url::String)
+#     try
+#         HTTP.head(url, status_exception = true)
+#         return true
+#     catch
+#         return false
+#     end
+# end
+
+# joinpath(splitpath(path)...) removes trailing slashes
+# in system independent manner
+# function cleanpath(path::String) 
+#     path = joinpath(splitpath(normpath(path))...)
+#     @assert !endswith(path, Base.Filesystem.pathsep())
+#     return path
+# end
 
 
