@@ -46,7 +46,7 @@ function fetch_sha256(fetcher::Fetcher, opts::Options)
         $(fetcher.name)
     """
     cmd = `nix-prefetch $expr $(parsed)`
-    @info cmd
+    @debug cmd
     return strip(read(pipeline(cmd; stderr=devnull), String))
 end
 

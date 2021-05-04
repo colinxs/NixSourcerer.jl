@@ -1,19 +1,19 @@
 { lib, fetchurl, unzip }:
 
-{ endPoint 
+{ fullURL ? null
+, endPoint ? null
 , server ? "https://pkg.julialang.org"
 , name ? "source"
-, sha256
 , extraPostFetch ? ""
 , ... } @ args:
 
-let
-  filename = name + ".tar.gz"; 
-in
-(fetchurl {
-  inherit name sha256;
+assert (fullURL != null) -> endPoint == null;
 
-  url = server + endPoint;
+(fetchurl (let
+  filename = name + ".tar.gz";
+  url = if fullURL != null then fullURL else server + "/${endPoint}";
+in {
+  inherit name url;
 
   recursiveHash = true;
 
@@ -30,12 +30,12 @@ in
     mv "$unpackDir" "$out"
     
     ${extraPostFetch}
+
     # Remove non-owner write permissions
     # Fixes https://github.com/NixOS/nixpkgs/issues/38649
     chmod 755 "$out"
   '';
-} // removeAttrs args [ "endPoint" "server" "extraPostFetch" ]).overrideAttrs (x: {
+} // removeAttrs args [ "fullURL" "endPoint" "server" "extraPostFetch" ])).overrideAttrs (x: {
   # Hackety-hack: we actually need unzip hooks, too
-  # TODO
   nativeBuildInputs = x.nativeBuildInputs ++ [ unzip ];
 })

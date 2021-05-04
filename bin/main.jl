@@ -1,5 +1,8 @@
 using NixSourcerer
 using ArgParse
+using Pkg
+
+Pkg.instantiate()
 
 function julia_main()::Cint
     try

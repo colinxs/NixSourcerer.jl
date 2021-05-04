@@ -4,6 +4,8 @@ module M
 # Nix sha256 is base-32 encoded
 # Artifact sha256 is base-16 encoded
 #   nix-hash --type sha256 --to-base16 <HASH>
+# If 'name' is left as 'source' for 'fetchzip'
+# things go a lot slower??? Passing a name for now
 
 using Pkg
 using Pkg: pkg_server
@@ -15,7 +17,7 @@ using Base: UUID, SHA1
 using NixSourcerer
 using LibGit2
 
-const FLAKE_PATH = joinpath(@__DIR__, "../default.nix")
+const FLAKE_PATH = joinpath(@__DIR__, "../../default.nix")
 
 const PKG_FETCHER = "pkgs.juliaPlatform.fetchJuliaPackage"
 const ARTIFACT_FETCHER = "pkgs.juliaPlatform.fetchJuliaArtifact"
