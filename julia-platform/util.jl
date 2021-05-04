@@ -12,7 +12,7 @@ function get_pkg_url(uuid::UUID, tree_hash::String)
     end
 end
 
-function get_source_path(ctx::Context, name::String, uuid::UUID, tree_hash::SHA1) 
+function get_source_path(ctx::Context, name::String, uuid::UUID, tree_hash::SHA1)
     spec = Pkg.Types.PackageSpec(; name, uuid, tree_hash)
     path = Pkg.Operations.source_path(ctx, spec)
     for depot in DEPOT_PATH
@@ -31,7 +31,7 @@ function convert_sha256(data::String, base::Symbol)
     else
         error("Unknown base $base")
     end
-    read(`nix-hash --type sha256 $flag $data`, String)
+    return read(`nix-hash --type sha256 $flag $data`, String)
 end
 
 function fetch_sha256(fetcher::Fetcher, opts::Options)
@@ -45,16 +45,15 @@ function fetch_sha256(fetcher::Fetcher, opts::Options)
         with pkgs; 
         $(fetcher.name)
     """
-    expr = fetcher.name
     cmd = `nix-prefetch $expr $(parsed)`
-    x=strip(read(pipeline(cmd, stderr=devnull), String))
-    x
+    @info cmd
+    return strip(read(pipeline(cmd; stderr=devnull), String))
 end
 
-function parse_fetcher(fetcher::Fetcher, opts::Options = Options())
+function parse_fetcher(fetcher::Fetcher, opts::Options=Options())
     args = copy(fetcher.args)
     parsed = ["--hash-algo", "sha256", "--output", "raw"]
-    
+
     # Hackity hack hack
     if fetcher.name == BUILTINS_GIT_FETCHER
         push!(parsed, "--no-compute-hash")
@@ -85,7 +84,7 @@ function parse_fetcher(fetcher::Fetcher, opts::Options = Options())
             k = "--$(k)"
         end
 
-        push!(parsed, string(k)) 
+        push!(parsed, string(k))
         if v !== nothing
             push!(parsed, string(v))
         end
@@ -93,7 +92,6 @@ function parse_fetcher(fetcher::Fetcher, opts::Options = Options())
 
     return parsed
 end
-
 
 function is_git_repo(path::String)
     try
@@ -107,7 +105,7 @@ end
 function get_repo_meta(path::String)
     repo = GitRepo(path)
 
-    branch_ref = LibGit2.head(repo);
+    branch_ref = LibGit2.head(repo)
     ref = LibGit2.name(branch_ref)
     shortref = LibGit2.shortname(branch_ref)
     rev = string(LibGit2.head_oid(repo))
@@ -117,9 +115,8 @@ function get_repo_meta(path::String)
         LibGit2.url(LibGit2.get(LibGit2.GitRemote, repo, name))
     end
 
-    return (;ref, shortref, rev, remote_names, remote_urls)
+    return (; ref, shortref, rev, remote_names, remote_urls)
 end
-
 
 # function isvalid_url(url::String)
 #     try
@@ -137,5 +134,3 @@ end
 #     @assert !endswith(path, Base.Filesystem.pathsep())
 #     return path
 # end
-
-

@@ -21,7 +21,7 @@ function print(io::IO, xs...)
     return nothing
 end
 
-print(io::IO, x) = print(io, string(x)) 
+print(io::IO, x) = print(io, string(x))
 
 print(io::IO, x::Union{AbstractChar,AbstractString}) = Base.print(io, '"', x, '"')
 
@@ -41,7 +41,7 @@ function print(io::IO, x::Pair)
     return nothing
 end
 
-function print(io::IO, x::AbstractDict; sort::Bool = false)
+function print(io::IO, x::AbstractDict; sort::Bool=false)
     write(io, '{')
     ks = sort ? Base.sort(collect(keys(x))) : keys(x)
     for k in ks

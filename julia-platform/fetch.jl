@@ -1,11 +1,13 @@
-function select_registry_fetchers(opts::Options) 
+function select_registry_fetchers(opts::Options)
     tofetch = Dict{RegistryInfo,Vector{Fetcher}}()
     pkg_server_urls = Pkg.Types.pkg_server_registry_urls()
     for reg in collect_registries()
         fetchers = tofetch[reg] = Fetcher[]
         if haskey(pkg_server_urls, reg.uuid)
             url = "$(pkg_server_urls[reg.uuid])#registry.tar.gz"
-            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false)))
+            push!(
+                fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false))
+            )
         end
         if is_git_repo(reg.path)
             repo_meta = get_repo_meta(reg.path)
@@ -19,49 +21,59 @@ function select_registry_fetchers(opts::Options)
                 else
                     remote_url = only(repo_meta.remote_urls)
                 end
-                fetcher = Fetcher(GIT_FETCHER, Dict("url" => remote_url, "rev" => repo_meta.rev))
+                fetcher = Fetcher(
+                    GIT_FETCHER, Dict("url" => remote_url, "rev" => repo_meta.rev)
+                )
                 push!(fetchers, fetcher)
             end
         end
     end
 
     selected = select_fetchers(tofetch, opts)
-    for (reg, fetcher) in selected 
+    for (reg, fetcher) in selected
         fetcher === nothing && error("Registry with UUID $(reg.uuid) has no sources")
     end
 
     return selected
 end
 
-function select_pkg_fetchers(pkgs::Vector{PackageInfo}, opts::Options) 
+function select_pkg_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
     tofetch = Dict{PackageInfo,Vector{Fetcher}}()
-    for pkg in pkgs 
+    for pkg in pkgs
         fetchers = tofetch[pkg] = Fetcher[]
         if opts.pkg_server !== nothing
             url = "$(opts.pkg_server)/package/$(pkg.uuid)/$(pkg.tree_hash)#package.tar.gz"
-            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false))) 
-            # push!(fetchers, Fetcher(PKG_FETCHER, Dict(
-            #     "uuid" => pkg.uuid, 
-            #     "treeHash" => pkg.tree_hash, 
-            #     "server" => opts.pkg_server
+            push!(
+                fetchers,
+                Fetcher(
+                    ARCHIVE_FETCHER,
+                    Dict("url" => url, "stripRoot" => false, "name" => string(pkg.uuid)),
+                ),
+            )
+
+            # push!(fetchers, Fetcher(PKG_SERVER_FETCHER, Dict(
+            #     "endPoint" => "/package/$(pkg.uuid)/$(pkg.tree_hash)",
+            #     "server" => opts.pkg_server,
+            #     "name" => string(pkg.uuid)
             # )))
         end
-        for url in pkg.archives 
-            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => pkg.url))) 
+        for url in pkg.archives
+            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => pkg.url)))
         end
-        for repo in pkg.repos 
-            push!(fetchers, Fetcher(GIT_FETCHER, Dict("url" => repo, "rev" => pkg.tree_hash)))
+        for repo in pkg.repos
+            push!(
+                fetchers, Fetcher(GIT_FETCHER, Dict("url" => repo, "rev" => pkg.tree_hash))
+            )
         end
     end
-    
+
     selected = select_fetchers(tofetch, opts)
-    for (pkg, fetcher) in selected 
+    for (pkg, fetcher) in selected
         fetcher === nothing && error("Package with UUID '$(pkg.uuid)' has no sources")
     end
 
     return selected
 end
-
 
 function select_artifact_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
     tofetch = Dict{ArtifactInfo,Vector{Fetcher}}()
@@ -74,24 +86,34 @@ function select_artifact_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
         fetchers = tofetch[artifact] = Fetcher[]
         if opts.pkg_server !== nothing
             # Prefer using Pkg server even though we don't have a sha256
-            url = "$(opts.pkg_server)/artifact/$(artifact.tree_hash)#artifact.tar.gz"
-            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false))) 
-            # push!(fetchers, Fetcher(ARTIFACT_FETCHER, Dict(
-            #     "treeHash" => artifact.tree_hash, 
-            #     "server" => opts.pkg_server
-            # )))
+            # url = "$(opts.pkg_server)/artifact/$(artifact.tree_hash)#artifact.tar.gz"
+            # push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false))) 
+
+            push!(
+                fetchers,
+                Fetcher(
+                    PKG_SERVER_FETCHER,
+                    Dict(
+                        "endPoint" => "/artifact/$(artifact.tree_hash)",
+                        "server" => opts.pkg_server,
+                    ),
+                ),
+            )
         elseif isempty(artifact.downloads)
             @warn "Artifact $artifact_name ($(artifact.tree_hash)) has no downloads"
             continue
         else
             for dl in artifact.downloads
-                push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => dl.url, "sha256" => dl.sha256)))
+                push!(
+                    fetchers,
+                    Fetcher(ARCHIVE_FETCHER, Dict("url" => dl.url, "sha256" => dl.sha256)),
+                )
             end
         end
     end
-    
+
     selected = select_fetchers(tofetch, opts)
-    for (artifact, fetcher) in selected 
+    for (artifact, fetcher) in selected
         fetcher === nothing && error("Artifact $(artifact.name) has no sources")
     end
 
@@ -99,13 +121,14 @@ function select_artifact_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
 end
 
 function is_artifact_required(artifact::ArtifactInfo, opts::Options)
-    lazy_matches   = !(artifact.lazy && !opts.lazy_artifacts)
-    system_matches = ((opts.arch === nothing || artifact.arch in opts.arch)
-                   && (opts.os   === nothing || artifact.os   in opts.os)
-                   && (opts.libc === nothing || artifact.libc in opts.libc))
+    lazy_matches = !(artifact.lazy && !opts.lazy_artifacts)
+    system_matches = (
+        (opts.arch === nothing || artifact.arch in opts.arch) &&
+        (opts.os === nothing || artifact.os in opts.os) &&
+        (opts.libc === nothing || artifact.libc in opts.libc)
+    )
     return lazy_matches && system_matches
 end
-
 
 function select_fetchers(tofetch::Dict{K,Vector{Fetcher}}, opts::Options) where {K}
     jobs = Channel{Tuple{K,Vector{Fetcher}}}(opts.nworkers)
@@ -113,13 +136,13 @@ function select_fetchers(tofetch::Dict{K,Vector{Fetcher}}, opts::Options) where 
     @sync begin
         # writer
         @async begin
-            for (key, fetchers) in tofetch 
+            for (key, fetchers) in tofetch
                 put!(jobs, (key, fetchers))
             end
         end
-       
+
         # readers
-        for i in 1:opts.nworkers
+        for i in 1:(opts.nworkers)
             @async begin
                 for (key, fetchers) in jobs
                     fetcher = select_fetcher(fetchers, opts)
@@ -128,12 +151,18 @@ function select_fetchers(tofetch::Dict{K,Vector{Fetcher}}, opts::Options) where 
             end
         end
 
-        bar = MiniProgressBar(; indent=2, header = "Progress", color = Base.info_color(),
-                                percentage=false, always_reprint=true, max = length(tofetch))
+        bar = MiniProgressBar(;
+            indent=2,
+            header="Progress",
+            color=Base.info_color(),
+            percentage=false,
+            always_reprint=true,
+            max=length(tofetch),
+        )
         try
             start_progress(stdout, bar)
             selected = Dict{K,FetcherResult}()
-            for i=1:length(tofetch)
+            for i in 1:length(tofetch)
                 bar.current = i
 
                 key, fetcher = take!(results)
@@ -142,7 +171,7 @@ function select_fetchers(tofetch::Dict{K,Vector{Fetcher}}, opts::Options) where 
                 # print_progress_bottom(stdout)
                 show_progress(stdout, bar)
             end
-            return selected 
+            return selected
         finally
             end_progress(stdout, bar)
             close(jobs)
@@ -152,15 +181,17 @@ function select_fetchers(tofetch::Dict{K,Vector{Fetcher}}, opts::Options) where 
 end
 
 function select_fetcher(fetchers::Vector{Fetcher}, opts::Options)
-    for fetcher in fetchers 
+    for fetcher in fetchers
         try
-            sha256 = fetch_sha256(fetcher, opts) 
+            sha256 = fetch_sha256(fetcher, opts)
             if fetcher.name != BUILTINS_GIT_FETCHER
                 fetcher.args["sha256"] = sha256
             end
             return fetcher
         catch e
-            @info "Fetcher failed: $fetcher\n$(sprint(showerror, e))"
+            bt = backtrace()
+            @info "Fetcher failed: $fetcher\n$(sprint(showerror, e, bt))"
+            rethrow(e)
             continue
         end
     end

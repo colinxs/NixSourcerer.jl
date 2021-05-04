@@ -12,12 +12,11 @@ end
 
 function Nix.print(io::IO, fetcher::Fetcher)
     print(io, fetcher.name, " ")
-    Nix.print(io, fetcher.args, sort = true)
+    Nix.print(io, fetcher.args; sort=true)
     return nothing
 end
 
-
-Base.@kwdef mutable struct RegistryInfo 
+Base.@kwdef mutable struct RegistryInfo
     name::String
     uuid::UUID
     url::String
@@ -26,7 +25,7 @@ end
 
 function collect_registries()
     map(Pkg.Types.collect_registries()) do regspec
-        RegistryInfo(;regspec.name, uuid = UUID(regspec.uuid), regspec.url, regspec.path)
+        RegistryInfo(; regspec.name, uuid=UUID(regspec.uuid), regspec.url, regspec.path)
     end
 end
 
@@ -36,9 +35,8 @@ function registry_relpath(reg::RegistryInfo)
         depot = realpath(depot)
         startswith(reg, depot) && return relpath(reg, depot)
     end
-    error("Could not locate $(reg.name) in $DEPOT_PATH")
+    return error("Could not locate $(reg.name) in $DEPOT_PATH")
 end
-
 
 Base.@kwdef mutable struct ArtifactInfo
     name::String
@@ -48,9 +46,8 @@ Base.@kwdef mutable struct ArtifactInfo
     os::Union{String,Nothing} = nothing
     libc::Union{String,Nothing} = nothing
     lazy::Bool = false
-    downloads::Vector{NamedTuple{(:url, :sha256), Tuple{Int64, Int64}}} = []
+    downloads::Vector{NamedTuple{(:url, :sha256),Tuple{Int64,Int64}}} = []
 end
-
 
 Base.@kwdef mutable struct PackageInfo
     name::String
@@ -67,7 +64,6 @@ Base.@kwdef mutable struct PackageInfo
     repos::Vector{String} = String[]
     archives::Vector{String} = String[]
 end
-
 
 Base.@kwdef struct Options
     nworkers::Int = 1

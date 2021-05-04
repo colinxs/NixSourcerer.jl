@@ -15,11 +15,11 @@ using Base: UUID, SHA1
 using NixSourcerer
 using LibGit2
 
-
 const FLAKE_PATH = joinpath(@__DIR__, "../default.nix")
 
-const PKG_FETCHER = "pkgs.juliaPlatform.fetchJuliaPackage" 
-const ARTIFACT_FETCHER = "pkgs.juliaPlatform.fetchJuliaArtifact" 
+const PKG_FETCHER = "pkgs.juliaPlatform.fetchJuliaPackage"
+const ARTIFACT_FETCHER = "pkgs.juliaPlatform.fetchJuliaArtifact"
+const PKG_SERVER_FETCHER = "pkgs.juliaPlatform.fetchPkgServer"
 
 const PKGS_ARCHIVE_FETCHER = "pkgs.fetchzip"
 const BUILTINS_ARCHIVE_FETCHER = "builtins.fetchTarball"
@@ -29,22 +29,22 @@ const PKGS_GIT_FETCHER = "pkgs.fetchgit"
 const BUILTINS_GIT_FETCHER = "builtins.fetchGit"
 const GIT_FETCHER = BUILTINS_GIT_FETCHER
 
-
 include("./types.jl")
 include("./util.jl")
 include("./fetch.jl")
 
-
 function load_registries!(pkgs::Vector{PackageInfo})
-    for reg in collect_registries() 
+    for reg in collect_registries()
         known = TOML.parsefile(joinpath(reg.path, "Registry.toml"))["packages"]
         for pkg in pkgs
             if pkg.is_tracking_registry
                 uuid = string(pkg.uuid)
-                if haskey(known, uuid) 
-                    meta = TOML.parsefile(joinpath(reg.path, known[uuid]["path"], "Package.toml"))
+                if haskey(known, uuid)
+                    meta = TOML.parsefile(
+                        joinpath(reg.path, known[uuid]["path"], "Package.toml")
+                    )
                     push!(pkg.repos, meta["repo"])
-                    push!(pkg.registries, reg) 
+                    push!(pkg.registries, reg)
                 end
             end
         end
@@ -53,7 +53,9 @@ function load_registries!(pkgs::Vector{PackageInfo})
 end
 
 function load_artifacts!(pkginfo::PackageInfo)
-    artifacts_file = Pkg.Artifacts.find_artifacts_toml(joinpath(pkginfo.depot, pkginfo.path))
+    artifacts_file = Pkg.Artifacts.find_artifacts_toml(
+        joinpath(pkginfo.depot, pkginfo.path)
+    )
     if artifacts_file !== nothing
         artifacts_meta = TOML.parsefile(artifacts_file)
         for (name, metas) in artifacts_meta
@@ -64,12 +66,14 @@ function load_artifacts!(pkginfo::PackageInfo)
             for meta in metas
                 artifactinfo = ArtifactInfo(;
                     name,
-                    tree_hash = SHA1(meta["git-tree-sha1"]),
-                    arch      = get(meta, "arch", nothing),
-                    os        = get(meta, "os", nothing),
-                    libc      = get(meta, "libc", nothing),
-                    lazy      = get(meta, "lazy", false),
-                    downloads = map(d -> (url=d["url"], sha256=d["sha256"]), get(meta, "downloads", []))
+                    tree_hash=SHA1(meta["git-tree-sha1"]),
+                    arch=get(meta, "arch", nothing),
+                    os=get(meta, "os", nothing),
+                    libc=get(meta, "libc", nothing),
+                    lazy=get(meta, "lazy", false),
+                    downloads=map(
+                        d -> (url=d["url"], sha256=d["sha256"]), get(meta, "downloads", [])
+                    ),
                 )
                 push!(pkginfo.artifacts[name], artifactinfo)
             end
@@ -90,16 +94,16 @@ function load_packages(ctx::Context)
         else
             tree_hash = SHA1(pkgspec.tree_hash)
             depot, path = get_source_path(ctx, pkgspec.name, uuid, tree_hash)
-            pkg = PackageInfo(; 
-                uuid, 
-                pkgspec.name, 
+            pkg = PackageInfo(;
+                uuid,
+                pkgspec.name,
                 pkgspec.version,
-                tree_hash, 
+                tree_hash,
                 depot,
                 path,
                 pkgspec.is_tracking_path,
                 pkgspec.is_tracking_repo,
-                pkgspec.is_tracking_registry
+                pkgspec.is_tracking_registry,
             )
 
             if pkg.is_tracking_repo
@@ -107,23 +111,23 @@ function load_packages(ctx::Context)
             end
 
             load_artifacts!(pkg)
-            
+
             push!(pkgs, pkg)
         end
     end
 
     load_registries!(pkgs)
 
-    return pkgs 
+    return pkgs
 end
 
 function generate_depot(
-        registry_fetchers::Dict{RegistryInfo,FetcherResult}, 
-        pkg_fetchers::Dict{PackageInfo,FetcherResult}, 
-        artifact_fetchers::Dict{ArtifactInfo,FetcherResult},
-    )
+    registry_fetchers::Dict{RegistryInfo,FetcherResult},
+    pkg_fetchers::Dict{PackageInfo,FetcherResult},
+    artifact_fetchers::Dict{ArtifactInfo,FetcherResult},
+)
     depot = Dict{String,Fetcher}()
-    for (reg, fetcher) in registry_fetchers 
+    for (reg, fetcher) in registry_fetchers
         path = registry_relpath(reg)
         @assert !haskey(depot, path)
         depot[path] = fetcher
@@ -139,8 +143,10 @@ function generate_depot(
     return depot
 end
 
-function write_depot(depot::Dict{String,Fetcher}, meta::Dict{String,Any}, opts::Options, package_path::String)
-    io = IOBuffer(append=true)
+function write_depot(
+    depot::Dict{String,Fetcher}, meta::Dict{String,Any}, opts::Options, package_path::String
+)
+    io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }: {\n")
     write(io, "meta = ")
     Nix.print(io, meta)
@@ -149,14 +155,14 @@ function write_depot(depot::Dict{String,Fetcher}, meta::Dict{String,Any}, opts::
     for path in sort(collect(keys(depot)))
         Nix.print(io, path)
         write(io, " = (")
-        Nix.print(io, depot[path]) 
+        Nix.print(io, depot[path])
         write(io, ");\n")
     end
     write(io, "};\n")
     write(io, '}')
 
     depotfile_path = normpath(joinpath(package_path, "Depot.nix"))
-    if ispath(depotfile_path) && !opts.force_overwrite 
+    if ispath(depotfile_path) && !opts.force_overwrite
         error("$depotfile_path already exists!")
     else
         @info "Writing depot to $depotfile_path"
@@ -166,15 +172,13 @@ function write_depot(depot::Dict{String,Fetcher}, meta::Dict{String,Any}, opts::
     end
 end
 
-function main(package_path::String, opts::Options = Options())
+function main(package_path::String, opts::Options=Options())
     if opts.pkg_server !== nothing
         ENV["JULIA_PKG_SERVER"] = opts.pkg_server
         @assert Pkg.pkg_server() == opts.pkg_server
     end
 
-    meta = Dict{String,Any}(
-        "pkgServer" => opts.pkg_server
-    )
+    meta = Dict{String,Any}("pkgServer" => opts.pkg_server)
 
     Pkg.Operations.with_temp_env(package_path) do
         ctx = Context()
@@ -197,14 +201,13 @@ end
 
 end
 
-opts = M.Options(
-    nworkers = 8,
-    arch = Set(["x86_64"]),
-    os =   Set(["linux"]),
-    libc = Set(["glibc"]),
-    force_overwrite = true,
-    check_store = true
+opts = M.Options(;
+    nworkers=8,
+    arch=Set(["x86_64"]),
+    os=Set(["linux"]),
+    libc=Set(["glibc"]),
+    force_overwrite=true,
+    check_store=true,
 )
 x = M.main(joinpath(@__DIR__, ".."), opts)
 nothing
-
