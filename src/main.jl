@@ -1,4 +1,3 @@
-using NixSourcerer
 using ArgParse
 
 function parse_commandline()
