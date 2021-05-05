@@ -1,17 +1,25 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     if get(config, "recursive", false)
-        if has_project(path)
-            _update(path, config)
-        end
-
+        paths = String[]
+        has_project(path) && push!(paths, path)
         for (root, dirs, files) in walkdir(path)
             for dir in dirs
                 path = joinpath(root, dir)
                 if has_project(path)
-                    _update(path, config)
+                    has_project(path) && push!(paths, path)
                 end
             end
         end
+
+        workers = get(config, "workers", 1)::Integer
+        if workers > 1 
+            config = copy(config)
+            # config["workers"] = 1
+            asyncmap(path -> _update(path, config), paths; ntasks=workers)
+        else
+            foreach(path -> _update(path, config), paths) 
+        end
+
     else
         _update(path, config)
     end
