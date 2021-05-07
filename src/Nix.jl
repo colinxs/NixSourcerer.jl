@@ -33,7 +33,7 @@ print(io::IO, x::Nothing) = Base.print(io, "null")
 
 print(io::IO, x::Symbol) = Base.print(io, string(x))
 
-function print(io::IO, x::Pair)
+function print(io::IO, x::Pair; kwargs...)
     print(io, x.first)
     write(io, " = ")
     print(io, x.second)
@@ -41,11 +41,15 @@ function print(io::IO, x::Pair)
     return nothing
 end
 
-function print(io::IO, x::AbstractDict; sort::Bool=false)
+function print(io::IO, xs::AbstractDict; sort::Bool=false)
     write(io, '{')
-    ks = sort ? Base.sort(collect(keys(x))) : keys(x)
+    ks = sort ? Base.sort(collect(keys(xs))) : keys(xs)
     for k in ks
-        print(io, Pair(k, x[k]))
+        x = xs[k]
+        print(io, k) 
+        write(io, " = ")
+        x isa AbstractDict ? print(io, x; sort) : print(io, x)
+        write(io, ";")
     end
     write(io, '}')
     return nothing
@@ -63,8 +67,11 @@ function print(io::IO, xs::Union{AbstractVector,Tuple})
 end
 
 nixfmt(io::IO, x) = _format(io, x, `nixfmt`)
-nixpkgs_fmt(io::IO, x) = _format(io, x, `nixpkgs-fmt`)
-function _format(io::IO, x, formatter::Cmd)
+function nixpkgs_fmt(io::IO, x)
+    # needs to be formatted twice to be idempotent? 
+    _format(io, x, pipeline(`nixpkgs-fmt`, `nixpkgs-fmt`))
+end
+function _format(io::IO, x, formatter::Base.AbstractCmd)
     open(formatter, "w", io) do stdin
         write(stdin, x)
     end

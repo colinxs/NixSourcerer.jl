@@ -1,0 +1,2 @@
+(import ./compat.nix).shellNix
+

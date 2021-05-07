@@ -83,6 +83,16 @@
           apps."nix-sourcerer" = flake-utils.lib.mkApp { drv = main; };
           apps."test" = flake-utils.lib.mkApp { drv = test; };
           apps.julia  = flake-utils.lib.mkApp { drv = julia-wrapped; name = "julia"; };
+          
+          devShell = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              julia-wrapped
+              nix
+              nix-prefetch
+              nixpkgs-fmt
+              cacert # Needed for network access
+            ];
+          };
         });
     in outputs // systemOutputs;
 }
