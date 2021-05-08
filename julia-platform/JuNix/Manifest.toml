@@ -128,7 +128,7 @@ uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
 [[NixSourcerer]]
 deps = ["ArgParse", "Dates", "GitCommand", "HTTP", "JSON", "TOML"]
-path = ".."
+path = "../.."
 uuid = "393ab781-533d-4207-828b-ae5a02ad719c"
 version = "0.1.0"
 

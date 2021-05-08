@@ -19,7 +19,7 @@
   };
   
   inputs.nix-home = {
-    # url = "path:/home/colinxs";
+    # url = "path:/home/colinxs/nix-home";
     # url = "git+ssh://git@github.com/colinxs/home?dir=nix-home";
     url = github:colinxs/home?dir=nix-home;
     inputs.nixpkgs.follows = "nixpkgs";
@@ -39,9 +39,10 @@
         let
           pkgs = import inputs.nixpkgs { inherit system; inherit (self) overlay; };
           mur = nix-home.packages."${system}";
+          dev = mur.dev;
           julia = mur.julia-bin.latest;
           
-          callArgs = pkgs // { inherit julia callPackage callPackages; };
+          callArgs = pkgs // { inherit dev julia callPackage callPackages; };
           callPackage = pkgs.lib.callPackageWith callArgs; 
           callPackages = pkgs.lib.callPackagesWith callArgs;
 
@@ -49,10 +50,11 @@
           juliaPlatform = callPackages ./julia-platform {};
 
           julia-wrapped = juliaPlatform.buildJuliaWrapper {
-            extraDepotPaths = ["/tmp"];
             defaultDepots = true;
             activeProject = ./.;
-            extraMakeWrapperArgs = [ "--add-flags '--compile=min -O1'" ] ;
+            extraWrapperArgs = {
+              args = [ "--compile=min" "-O1" ];
+            };
             extraPackages = with pkgs; [
               nix
               nix-prefetch

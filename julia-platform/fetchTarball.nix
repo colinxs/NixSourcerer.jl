@@ -1,8 +1,6 @@
-{ lib, fetchurl, unzip }:
+{ lib, fetchurl, tar }:
 
-{ fullURL ? null
-, endPoint ? null
-, server ? "https://pkg.julialang.org"
+{ url
 , name ? "source"
 , extraPostFetch ? ""
 , ... } @ args:
@@ -39,3 +37,4 @@ in {
   # Hackety-hack: we actually need unzip hooks, too
   nativeBuildInputs = x.nativeBuildInputs ++ [ unzip ];
 })
+

@@ -211,5 +211,5 @@ opts = M.Options(;
     force_overwrite=true,
     check_store=true,
 )
-x = M.main(joinpath(@__DIR__, ".."), opts)
+x = M.main(joinpath(@__DIR__, "..", ".."), opts)
 nothing

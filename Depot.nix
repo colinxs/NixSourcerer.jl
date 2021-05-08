@@ -165,17 +165,13 @@
     "registries/General" = (pkgs.juliaPlatform.fetchPkgServer {
       "name" = "General";
       "server" = "https://pkg.julialang.org";
-      "sha256" = "0pny36dwbcksg0n4w95ri1vjfx0zkhd7i11gg58342lwyf2nf4i4";
+      "sha256" = "1lrly3kyk3ns11pkqpm85grp7zbwzzm7alxaffw45b22dgawpza5";
       "url" =
-        "https://pkg.julialang.org/registry/23338594-aafe-5451-b93e-139f81909106/12e6c2a850b61d3e4bf0d064b83ba725f3cb9ec4";
+        "https://pkg.julialang.org/registry/23338594-aafe-5451-b93e-139f81909106/40fd34e9d0e8864ec57e14290b5c1da262031061";
     });
     "registries/JuliaRegistry" = (builtins.fetchGit {
       "rev" = "0151ec459b6cd42b89f89d50ed361399fb027464";
       "url" = "https://github.com/colinxs/JuliaRegistry.git";
-    });
-    "registries/LyceumRegistry" = (builtins.fetchGit {
-      "rev" = "4235f83dadc2df94b2a5190f4cf5d2f104eccffd";
-      "url" = "ssh://git@github.com/Lyceum/LyceumRegistry.git";
     });
   };
 }
