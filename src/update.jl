@@ -38,9 +38,9 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
     validate(package)
 
     if haskey(config, "names")
-        names = config["names"] 
-        for name in config["names"] 
-            if !haskey(package.project.specs, name) 
+        names = config["names"]
+        for name in config["names"]
+            if !haskey(package.project.specs, name)
                 nixsourcerer_error("Key $name missing from $(package.project_file)")
             end
         end
@@ -84,4 +84,3 @@ function validate_config(config::AbstractDict)
     get(config, "workers", 1) > 0 || nixsourcerer_error("'workers' must be > 0)")
     return nothing
 end
-     

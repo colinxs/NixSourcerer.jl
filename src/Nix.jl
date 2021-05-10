@@ -46,7 +46,7 @@ function print(io::IO, xs::AbstractDict; sort::Bool=false)
     ks = sort ? Base.sort(collect(keys(xs))) : keys(xs)
     for k in ks
         x = xs[k]
-        print(io, k) 
+        print(io, k)
         write(io, " = ")
         x isa AbstractDict ? print(io, x; sort) : print(io, x)
         write(io, ";")
@@ -69,7 +69,7 @@ end
 nixfmt(io::IO, x) = _format(io, x, `nixfmt`)
 function nixpkgs_fmt(io::IO, x)
     # needs to be formatted twice to be idempotent? 
-    _format(io, x, pipeline(`nixpkgs-fmt`, `nixpkgs-fmt`))
+    return _format(io, x, pipeline(`nixpkgs-fmt`, `nixpkgs-fmt`))
 end
 function _format(io::IO, x, formatter::Base.AbstractCmd)
     open(formatter, "w", io) do stdin

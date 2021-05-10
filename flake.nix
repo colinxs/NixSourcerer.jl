@@ -6,7 +6,7 @@
     flake = false;
   };
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
   inputs.general-registry = {
     url = "github:JuliaRegistries/General";
@@ -19,35 +19,23 @@
   };
   
   inputs.nix-home = {
-    # url = "path:/home/colinxs/nix-home";
+    url = "path:/home/colinxs/nix-home";
     # url = "git+ssh://git@github.com/colinxs/home?dir=nix-home";
-    url = github:colinxs/home?dir=nix-home;
+    # url = github:colinxs/home?dir=nix-home;
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, flake-utils, nix-home, ... }@inputs:
     let
       name = "NixSourcerer";
-      outputs = {
-        overlay = _: prev: { 
-          # TODO use pkgs from final/prev? 
-          inherit (systemOutputs.legacyPackages."${prev.system}") juliaPlatform; 
-        };
-        overlays = { juliaPlatform = outputs.overlay; };
-      };
+      outputs = {};
       systemOutputs = flake-utils.lib.eachSystem ["x86_64-linux"] (system:
         let
           pkgs = import inputs.nixpkgs { inherit system; inherit (self) overlay; };
           mur = nix-home.packages."${system}";
           dev = mur.dev;
           julia = mur.julia-bin.latest;
-          
-          callArgs = pkgs // { inherit dev julia callPackage callPackages; };
-          callPackage = pkgs.lib.callPackageWith callArgs; 
-          callPackages = pkgs.lib.callPackagesWith callArgs;
-
-
-          juliaPlatform = callPackages ./julia-platform {};
+          juliaPlatform = mur.juliaPlatform;
 
           julia-wrapped = juliaPlatform.buildJuliaWrapper {
             defaultDepots = true;
@@ -68,17 +56,17 @@
           }; 
             
           main = pkgs.writeScriptBin "nix-sourcerer" ''
-            #!${pkgs.stdenv.shell}
+            #!${pkgs.runtimeShell}
             exec ${julia-wrapped}/bin/julia ${./bin/main.jl} "$@"
           '';
           
           test = pkgs.writeScriptBin "test" ''
-            #!${pkgs.stdenv.shell}
+            #!${pkgs.runtimeShell}
             exec ${julia-wrapped}/bin/julia -e 'using Pkg; Pkg.test()' 
           '';
         in rec {
           legacyPackages = {
-            inherit julia-wrapped juliaPlatform depot;
+            inherit julia-wrapped depot;
           };
 
           defaultApp = apps."nix-sourcerer";

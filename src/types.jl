@@ -10,7 +10,6 @@ nixsourcerer_error(msg::String...) = throw(NixSourcererError(join(msg)))
 
 Base.showerror(io::IO, err::NixSourcererError) = print(io, err.msg)
 
-
 ####
 #### Source
 ####
@@ -21,7 +20,7 @@ const SOURCE_KEYMAP = Dict(
     "name" => "name",
     "fetcher_name" => "fetcherName",
     "fetcher_args" => "fetcherArgs",
-    "meta" => "meta"
+    "meta" => "meta",
 )
 
 mutable struct Source
@@ -217,7 +216,7 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
     expr = """
         with builtins; 
         let
-            fields = [$(join(map(s -> "\"$(s)\"", fields), ' '))];
+            fields = [$(join(map(s -> "\"$(s)\"", fields), " "))];
             getFields = _: v: foldl' (a: b: a // b) {} (map (n: { "\${n}" = v."\${n}"; }) fields);
         in
         mapAttrs getFields (import "$(manifest_file)" {})
@@ -227,18 +226,19 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
 
     manifest = Manifest()
     for (name, source) in json
-        args = [source[k] for k in fields] 
+        args = [source[k] for k in fields]
         manifest.sources[name] = Source(args...)
     end
 
     return manifest
 end
 
-
-function write_manifest(manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILE_NAME)
+function write_manifest(
+    manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILE_NAME
+)
     io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
-    Nix.print(io, manifest.sources; sort = true)
+    Nix.print(io, manifest.sources; sort=true)
     open(manifest_file, "w") do f
         Nix.nixpkgs_fmt(f, io)
     end

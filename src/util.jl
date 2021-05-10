@@ -1,6 +1,5 @@
 subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
 
-
 function rundebug(cmd::Base.AbstractCmd; stdout::Bool=false)
     @debug "Running command: $cmd"
     ioerr = IOBuffer()
@@ -26,14 +25,16 @@ function get_sha256(fetcher_name, fetcherargs)
     cmd = pipeline(
         `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin=io
     )
-    return strip(rundebug(cmd, stdout = true))
+    return strip(rundebug(cmd; stdout=true))
 end
 
 function get_cargosha256(pkg)
     # Not sure what exactly to override here..
     # See: https://github.com/Mic92/nix-update/issues/55
     expr = "{ sha256 }: $(pkg).cargoDeps.overrideAttrs (_: { inherit sha256; cargoSha256 = sha256; outputHash = sha256; })"
-    return strip(rundebug(`nix-prefetch --hash-algo sha256 --output raw $expr`, stdout=true))
+    return strip(
+        rundebug(`nix-prefetch --hash-algo sha256 --output raw $expr`; stdout=true)
+    )
 end
 
 # TODO may actually want to use <nixpkgs>
@@ -44,13 +45,13 @@ function build_source(fetcher_name, fetcher_args)
 end
 
 function nixpkgs(args::AbstractDict=Dict())
-    "(import (import $(DEFAULT_NIX)).inputs.nixpkgs $(Nix.print(args)))"
+    return "(import (import $(DEFAULT_NIX)).inputs.nixpkgs $(Nix.print(args)))"
 end
 
 function run_julia_script(script_file::AbstractString)
     script_file = abspath(script_file)
     shell_file = joinpath(dirname(script_file), "shell.nix")
-    cmd = if isfile(shell_file) 
+    cmd = if isfile(shell_file)
         `nix-shell --run "julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)"`
     else
         `julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)`

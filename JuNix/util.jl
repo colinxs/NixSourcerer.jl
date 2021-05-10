@@ -39,9 +39,11 @@ function fetch_sha256(fetcher::Fetcher, opts::Options)
     expr = """
         { nixpkgs ? <nixpkgs> }:
         let 
-            flake = (import $(FLAKE_PATH)); 
-            pkgs = (import nixpkgs { overlays = [ flake.overlay ]; });
-        in 
+            flake = (import $(FLAKE_PATH));
+            murOverlay = flake.inputs.nix-home.overlays.mur;
+            pkgs = import nixpkgs { overlays = [ murOverlay ]; };
+        in
+        with pkgs.mur;
         with pkgs; 
         $(fetcher.name)
     """

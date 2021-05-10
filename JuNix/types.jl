@@ -5,7 +5,7 @@ end
 
 const FetcherResult = Union{Fetcher,Nothing}
 
-function Base.show(io::IO, fetcher::M.Fetcher)
+function Base.show(io::IO, fetcher::Fetcher)
     print(io, "nix-prefetch ", fetcher.name, " ", join(parse_fetcher(fetcher), " "))
     return nothing
 end

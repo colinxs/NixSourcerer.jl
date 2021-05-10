@@ -3,17 +3,12 @@ function select_registry_fetchers(opts::Options)
     pkg_server_urls = Pkg.Types.pkg_server_registry_urls()
     for reg in collect_registries()
         fetchers = tofetch[reg] = Fetcher[]
-        name = reg.name
+        name = "registry-$(reg.name)"
         if haskey(pkg_server_urls, reg.uuid)
-            # url = "$(pkg_server_urls[reg.uuid])#registry.tar.gz"
-            # push!(
-            #     fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false))
-            # )
-            push!(fetchers, Fetcher(PKG_SERVER_FETCHER, Dict(
-                "name" => name,
-                "url" => pkg_server_urls[reg.uuid],
-                "server" => opts.pkg_server,
-            )))
+            url = "$(pkg_server_urls[reg.uuid])#registry.tar.gz"
+            push!(
+                fetchers, Fetcher(ARCHIVE_FETCHER, Dict("name" => name, "url" => url, "stripRoot" => false))
+            )
         end
         if is_git_repo(reg.path)
             repo_meta = get_repo_meta(reg.path)
@@ -28,7 +23,7 @@ function select_registry_fetchers(opts::Options)
                     remote_url = only(repo_meta.remote_urls)
                 end
                 fetcher = Fetcher(
-                    GIT_FETCHER, Dict("url" => remote_url, "rev" => repo_meta.rev)
+                    GIT_FETCHER, Dict("name" => name, "url" => remote_url, "rev" => repo_meta.rev)
                 )
                 push!(fetchers, fetcher)
             end
@@ -47,28 +42,23 @@ function select_pkg_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
     tofetch = Dict{PackageInfo,Vector{Fetcher}}()
     for pkg in pkgs
         fetchers = tofetch[pkg] = Fetcher[]
-        name = pkg.name
+        name = "package-$(pkg.name)"
         if opts.pkg_server !== nothing
-            # url = "$(opts.pkg_server)/package/$(pkg.uuid)/$(pkg.tree_hash)#package.tar.gz"
-            # push!(
-            #     fetchers,
-            #     Fetcher(
-            #         ARCHIVE_FETCHER,
-            #         Dict("url" => url, "stripRoot" => false, "name" => name), 
-            #     ),
-            # )
-            push!(fetchers, Fetcher(PKG_SERVER_FETCHER, Dict(
-                "name" => name,
-                "endPoint" => "/package/$(pkg.uuid)/$(pkg.tree_hash)",
-                "server" => opts.pkg_server,
-            )))
+            url = "$(opts.pkg_server)/package/$(pkg.uuid)/$(pkg.tree_hash)#package.tar.gz"
+            push!(
+                fetchers,
+                Fetcher(
+                    ARCHIVE_FETCHER,
+                    Dict("name" => name, "url" => url, "stripRoot" => false, "name" => name), 
+                ),
+            )
         end
         for url in pkg.archives
-            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => pkg.url)))
+            push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("name" => name, "url" => pkg.url)))
         end
         for repo in pkg.repos
             push!(
-                fetchers, Fetcher(GIT_FETCHER, Dict("url" => repo, "rev" => pkg.tree_hash))
+                fetchers, Fetcher(GIT_FETCHER, Dict("name" => name, "url" => repo, "rev" => pkg.tree_hash))
             )
         end
     end
@@ -90,22 +80,12 @@ function select_artifact_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
         end
 
         fetchers = tofetch[artifact] = Fetcher[]
-        name = artifact.name
+        name = "artifact-$(artifact.tree_hash)"
         if opts.pkg_server !== nothing
             # Prefer using Pkg server even though we don't have a sha256
-            # url = "$(opts.pkg_server)/artifact/$(artifact.tree_hash)#artifact.tar.gz"
-            # push!(fetchers, Fetcher(ARCHIVE_FETCHER, Dict("url" => url, "stripRoot" => false))) 
-
+            url = "$(opts.pkg_server)/artifact/$(artifact.tree_hash)#artifact.tar.gz"
             push!(
-                fetchers,
-                Fetcher(
-                    PKG_SERVER_FETCHER,
-                    Dict(
-                        "endPoint" => "/artifact/$(artifact.tree_hash)",
-                        "server" => opts.pkg_server,
-                        "name" => name,
-                    ),
-                ),
+                fetchers, Fetcher(ARCHIVE_FETCHER, Dict("name" => name, "url" => url, "stripRoot" => false))
             )
         elseif isempty(artifact.downloads)
             @warn "Artifact $artifact_name ($(artifact.tree_hash)) has no downloads"
@@ -114,7 +94,7 @@ function select_artifact_fetchers(pkgs::Vector{PackageInfo}, opts::Options)
             for dl in artifact.downloads
                 push!(
                     fetchers,
-                    Fetcher(ARCHIVE_FETCHER, Dict("url" => dl.url, "sha256" => dl.sha256)),
+                    Fetcher(ARCHIVE_FETCHER, Dict("name" => name, "url" => dl.url, "sha256" => dl.sha256)),
                 )
             end
         end

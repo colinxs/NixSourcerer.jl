@@ -1,4 +1,4 @@
-module M
+module JuNix
 
 # NOTE
 # Nix sha256 is base-32 encoded
@@ -17,7 +17,7 @@ using Base: UUID, SHA1
 using NixSourcerer
 using LibGit2
 
-const FLAKE_PATH = joinpath(@__DIR__, "../../default.nix")
+const FLAKE_PATH = joinpath(@__DIR__, "..", "default.nix")
 
 const PKG_FETCHER = "pkgs.juliaPlatform.fetchJuliaPackage"
 const ARTIFACT_FETCHER = "pkgs.juliaPlatform.fetchJuliaArtifact"
@@ -202,14 +202,3 @@ function main(package_path::String, opts::Options=Options())
 end
 
 end
-
-opts = M.Options(;
-    nworkers=8,
-    arch=Set(["x86_64"]),
-    os=Set(["linux"]),
-    libc=Set(["glibc"]),
-    force_overwrite=true,
-    check_store=true,
-)
-x = M.main(joinpath(@__DIR__, "..", ".."), opts)
-nothing
