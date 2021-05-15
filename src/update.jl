@@ -34,38 +34,44 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         # Try to catch dependencies between updates
         shuffle!(julia_updates)
         shuffle!(normal_updates)
-        
+
         print_path = function (path)
             path = relpath(path, pwd())
             path = path == "." ? ". (cwd)" : path
             j = has_julia_project(path)
             s = has_update_script(path)
             f = !j && !s && has_flake(path)
-            m = !j && !s && has_project(path)
-            j, s, f, m = map(x -> x ? "+" : "-", (j, s, f, m)) 
-            str = @sprintf "%-4sJ%-3sS%-3sF%-3sM%-3s%-10s" "" j s f m ""
-            printstyled(str, color=:magenta)
-            println(path)
+            n = !j && !s && has_project(path)
+            j, s, f, n = map(x -> x ? "+" : "-", (j, s, f, n))
+            str = @sprintf "%-4sJ%-3sS%-3sF%-3sN%-3s%-10s" "" j s f n ""
+            printstyled(str; color=:magenta)
+            return println(path)
         end
-        printstyled("Updating the following paths:\n", color=Base.info_color(), bold=true)
-        for path in normal_updates
-            print_path(path)
-        end
-        for path in julia_updates
-            print_path(path)
-        end
+
+        printstyled("Updating the following paths:\n"; color=:blue, bold=true)
+        printstyled("J = (J)ulia Project | "; color=:blue, bold=true)
+        printstyled("S = Update (S)cript | "; color=:blue, bold=true)
+        printstyled("F = (F)lake | "; color=:blue, bold=true)
+        printstyled("N = (N)ix Project\n\n"; color=:blue, bold=true)
+
+        foreach(print_path, normal_updates)
+        foreach(print_path, julia_updates)
         println()
 
         # DEBUG
-        for path in normal_updates
-            _update(path, config)
-        end
-        for path in julia_updates
-            _update(path, config)
-        end
-        return
+        # for path in normal_updates
+        #     _update(path, config)
+        # end
+        # for path in julia_updates
+        #     _update(path, config)
+        # end
+        # return
 
+        # Since we're updating N paths with M packages each try not to use N*M workers
         workers = length(normal_updates) == 1 ? 1 : get(config, "workers", 1)::Integer
+        @assert workers >= 1
+        workers = round(Int, sqrt(workers), RoundUp)
+
         @sync begin
             @async begin
                 if workers == 1
@@ -81,10 +87,16 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
                 @async _update(path, config)
             end
         end
-
+        
+        len = length(normal_updates) + length(julia_updates)
     else
         _update(path, config)
+        len = 1
     end
+
+    println()
+    printstyled("Done! Congrats on updating $(len) package(s):\n"; color=:blue, bold=true)
+
     return nothing
 end
 
@@ -97,22 +109,26 @@ has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== noth
 
 function _update(path, config)
     rpath = relpath(path, pwd())
-    printstyled("Updating $rpath\n", color=:yellow, bold=true)
+    printstyled("Updating $rpath\n"; color=:yellow, bold=true)
     if has_update_script(path)
         run_julia_script(get_update_script(path))
-        println("Updated using script at $rpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.")
+        printstyled(
+            "Updated using script at $rpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.\n";
+            color=:green,
+            bold=true,
+        )
     else
         if has_flake(path)
             update_flake(path)
-            printstyled("Updated flake at $rpath\n", color=:green, bold=true)
+            printstyled("Updated flake at $rpath\n"; color=:green, bold=true)
         end
         if has_julia_project(path)
             update_julia_project(path)
-            printstyled("Updated Julia project at $rpath\n", color=:green, bold=true)
+            printstyled("Updated Julia project at $rpath\n"; color=:green, bold=true)
         end
         if has_project(path)
             update_package(path; config)
-            printstyled("Updated NixManifest.toml at $rpath\n", color=:green, bold=true)
+            printstyled("Updated NixManifest.toml at $rpath\n"; color=:green, bold=true)
         end
     end
 
@@ -122,13 +138,13 @@ end
 function update_flake(path)
     flake = get_flake(path)
     cmd = `nix-shell -p nixUnstable --command 'nix flake update'`
-    run(pipeline(setenv(cmd; dir=path), stderr=devnull))
+    run(pipeline(setenv(cmd; dir=path); stderr=devnull))
     return path
 end
 
 function update_julia_project(path)
     cmd = `julia --project=$(path) --startup-file=no --history-file=no -e 'using Pkg; Pkg.update()'`
-    run(pipeline(setenv(cmd, dir=path), stderr=devnull))
+    run(pipeline(setenv(cmd; dir=path); stderr=devnull))
     return path
 end
 
@@ -171,7 +187,7 @@ function update!(package::Package, name::AbstractString)
 
         package.manifest.sources[name] = manifest_source
 
-        printstyled("    Updated package $name from $rpath\n", color=:green)
+        printstyled("    Updated package $name from $rpath\n"; color=:green)
     catch e
         nixsourcerer_error("Could not update source $name from $rpath")
         rethrow()
