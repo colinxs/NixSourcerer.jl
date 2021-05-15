@@ -1,4 +1,6 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
+    isdir(path) || nixsourcerer_error("Not a directory: $(path)")
+
     if get(config, "recursive", false)
         julia_updates = String[]
         normal_updates = String[]
