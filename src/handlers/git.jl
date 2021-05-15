@@ -52,7 +52,7 @@ end
 
 # TODO kind of a hack
 function git_ref2rev(url::AbstractString, ref::AbstractString)
-    output = strip(read(`$(git()) ls-remote $url $ref`; String))
+    output = strip(read(`$(git()) ls-remote $url $ref`, String))
     lines = split(output, '\n')
     @assert length(lines) == 1
     columns = split(lines[1], '\t')

@@ -51,3 +51,8 @@ function merge_recursively!(a::AbstractDict, b::AbstractDict)
 end
 
 git_short_rev(rev) = SubString(rev, 1:7)
+
+function sanitize_name(name)
+    allowed=r"[^A-Za-z0-9+-._?=]"
+    return replace(name, allowed => '_')
+end

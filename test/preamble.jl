@@ -38,7 +38,7 @@ end
 function with_unpack(fn::Function, archive_path::AbstractString; strip::Bool=false)
     mktempdir() do dst
         if endswith(archive_path, ".zip")
-            run(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`)
+            run(pipeline(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`, stderr=devnull))
         else
             Tar.extract(`$(p7zip_jll.p7zip()) x $archive_path -so`, dst)
         end
@@ -74,8 +74,8 @@ end
 function with_clone_and_checkout(fn, url, ref_or_rev; leave_git=false)
     mktempdir() do dir
         out = joinpath(dir, "out")
-        run(`$(git()) clone $(url) $(out)`)
-        run(`$(git()) -C $(out) checkout $(ref_or_rev)`)
+        run(pipeline(`$(git()) clone $(url) $(out)`, stderr=devnull))
+        run(pipeline(`$(git()) -C $(out) checkout $(ref_or_rev)`, stderr=devnull))
         if !leave_git
             rm(joinpath(out, ".git"); recursive=true, force=true)
         end
