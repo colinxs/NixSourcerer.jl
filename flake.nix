@@ -51,13 +51,11 @@
             ];
           };
             
-          nix-sourcerer = pkgs.writeScriptBin "nix-sourcerer" ''
-            #!${pkgs.runtimeShell}
+          nix-sourcerer = dev.writeShellScriptBin "nix-sourcerer" {} ''
             exec ${julia-wrapped}/bin/julia ${./bin/main.jl} "$@"
           '';
           
-          run-test = pkgs.writeScriptBin "test" ''
-            #!${pkgs.runtimeShell}
+          run-test = dev.writeShellScriptBin "test" {} ''
             exec ${julia-wrapped}/bin/julia -e 'using Pkg; Pkg.test()' 
           '';
         in rec {
