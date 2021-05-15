@@ -11,6 +11,9 @@ using HTTP
 using GitCommand
 using Dates
 using ArgParse
+using Pkg
+using Random
+using URIs
 
 export update
 export update_package

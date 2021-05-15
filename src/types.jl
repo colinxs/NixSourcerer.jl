@@ -221,7 +221,7 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
         in
         mapAttrs getFields (import "$(manifest_file)" {})
     """
-    raw = strip(read(`nix eval --json "($expr)"`, String))
+    raw = strip(read(pipeline(`nix eval --json "($expr)"`, stderr=devnull), String)) 
     json = JSON.parse(raw)
 
     manifest = Manifest()

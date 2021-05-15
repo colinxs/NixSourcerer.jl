@@ -36,12 +36,14 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
         new_spec["rev"] = rev
         new_spec["url"] = "https://github.com/$(owner)/$(repo).git"
+        new_spec["name"] = git_short_rev(rev) 
         source = git_handler(name, new_spec)
         source.version = version
         return source
     else
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
         new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
+        new_spec["name"] = git_short_rev(rev) 
         source = archive_handler(name, new_spec)
         return Source(;
             pname=name,

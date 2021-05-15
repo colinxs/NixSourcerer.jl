@@ -1,40 +1,19 @@
 subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
 
-function rundebug(cmd::Base.AbstractCmd; stdout::Bool=false)
-    @debug "Running command: $cmd"
-    ioerr = IOBuffer()
-    cmd = pipeline(cmd; stderr=ioerr)
-    try
-        out = if stdout
-            read(cmd, String)
-        else
-            run(cmd)
-            nothing
-        end
-        @debug String(take!(ioerr))
-        return out
-    catch e
-        nixsourcerer_error("Could not execute $cmd: \n", String(take!(ioerr)))
-        rethrow()
-    end
-end
-
-function get_sha256(fetcher_name, fetcherargs)
-    @debug "Calling nix-prefetch" fetcher_name fetcherargs
-    io = IOBuffer(JSON.json(fetcherargs))
+function get_sha256(fetcher_name, fetcher_args)
+    @debug "Calling nix-prefetch" fetcher_name fetcher_args
+    io = IOBuffer(JSON.json(fetcher_args))
     cmd = pipeline(
-        `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin=io
+        `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin=io, stderr=devnull
     )
-    return strip(rundebug(cmd; stdout=true))
+    return strip(read(cmd, String))
 end
 
 function get_cargosha256(pkg)
     # Not sure what exactly to override here..
     # See: https://github.com/Mic92/nix-update/issues/55
     expr = "{ sha256 }: $(pkg).cargoDeps.overrideAttrs (_: { inherit sha256; cargoSha256 = sha256; outputHash = sha256; })"
-    return strip(
-        rundebug(`nix-prefetch --hash-algo sha256 --output raw $expr`; stdout=true)
-    )
+    return strip(read(pipeline(`nix-prefetch --hash-algo sha256 --output raw $expr`, stderr=devnull); String))
 end
 
 # TODO may actually want to use <nixpkgs>
@@ -56,7 +35,7 @@ function run_julia_script(script_file::AbstractString)
     else
         `julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)`
     end
-    run(setenv(cmd; dir=dirname(script_file)))
+    read(setenv(cmd; dir=dirname(script_file)), String)
     return nothing
 end
 
@@ -70,3 +49,5 @@ function merge_recursively!(a::AbstractDict, b::AbstractDict)
     end
     return a
 end
+
+git_short_rev(rev) = SubString(rev, 1:7)

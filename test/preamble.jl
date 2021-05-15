@@ -6,32 +6,19 @@ using GitCommand
 using p7zip_jll
 using Test
 
-function rundebug(cmd::Cmd, stdout::Bool=false)
-    ioerr = IOBuffer()
-    cmd = pipeline(cmd; stderr=ioerr)
-    out = if stdout
-        read(cmd, String)
-    else
-        run(cmd)
-        nothing
-    end
-    @debug String(take!(ioerr))
-    return out
-end
-
 noall(cmd::Cmd) = pipeline(cmd; stdout=devnull, stderr=devnull)
 
 function nix_file_sha256(path)
-    return strip(rundebug(`nix-hash --type sha256 --base32 --flat $path`, true))
+    return strip(read(pipeline(`nix-hash --type sha256 --base32 --flat $path`, stderr=devnull), String))
 end
 
 function nix_dir_sha256(path)
-    return strip(rundebug(`nix-hash --type sha256 --base32 $path`, true))
+    return strip(read(pipeline(`nix-hash --type sha256 --base32 $path`, stderr=devnull), String))
 end
 
 function nix_eval_source_attr(dir, attr)
     expr = "( (import $(dir)/NixManifest.nix {}).$(attr) )"
-    return strip(rundebug(`nix eval --raw $(expr)`, true))
+    return strip(read(pipeline(`nix eval --raw $(expr)`, stderr=devnull), String))
 end
 
 function compare_source_attr(dir, truth, attr::AbstractString)
@@ -51,7 +38,7 @@ end
 function with_unpack(fn::Function, archive_path::AbstractString; strip::Bool=false)
     mktempdir() do dst
         if endswith(archive_path, ".zip")
-            rundebug(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`)
+            run(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`)
         else
             Tar.extract(`$(p7zip_jll.p7zip()) x $archive_path -so`, dst)
         end
@@ -87,8 +74,8 @@ end
 function with_clone_and_checkout(fn, url, ref_or_rev; leave_git=false)
     mktempdir() do dir
         out = joinpath(dir, "out")
-        rundebug(`$(git()) clone $(url) $(out)`)
-        rundebug(`$(git()) -C $(out) checkout $(ref_or_rev)`)
+        run(`$(git()) clone $(url) $(out)`)
+        run(`$(git()) -C $(out) checkout $(ref_or_rev)`)
         if !leave_git
             rm(joinpath(out, ".git"); recursive=true, force=true)
         end

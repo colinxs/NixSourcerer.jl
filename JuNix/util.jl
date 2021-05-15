@@ -31,7 +31,7 @@ function convert_sha256(data::String, base::Symbol)
     else
         error("Unknown base $base")
     end
-    return read(`nix-hash --type sha256 $flag $data`, String)
+    return read(pipeline(`nix-hash --type sha256 $flag $data`, stderr=devnull), String)
 end
 
 function fetch_sha256(fetcher::Fetcher, opts::Options)

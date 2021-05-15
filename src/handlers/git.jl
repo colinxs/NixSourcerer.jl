@@ -30,6 +30,7 @@ function git_handler(name, spec)
 
     fetcher_args = subset(spec, "url")
     fetcher_args["rev"] = rev
+    fetcher_args["name"] = get(spec, "name", git_short_rev(rev))
     if builtin && submodule
         # TODO nix 2.4 fetchGit
         error("Cannot fetch submodules with builtins.fetchGit (until Nix 2.4)")
@@ -51,7 +52,7 @@ end
 
 # TODO kind of a hack
 function git_ref2rev(url::AbstractString, ref::AbstractString)
-    output = strip(rundebug(`$(git()) ls-remote $url $ref`; stdout=true))
+    output = strip(read(`$(git()) ls-remote $url $ref`; String))
     lines = split(output, '\n')
     @assert length(lines) == 1
     columns = split(lines[1], '\t')
