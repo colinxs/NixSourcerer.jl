@@ -203,18 +203,18 @@
       },
       "locked": {
         "dir": "nix-home",
-        "lastModified": 1621095311,
-        "narHash": "sha256-0aY/Qc72CauJ4A66xhHVJinVrrsqxgTe2jCCdubje6I=",
-        "ref": "master",
-        "rev": "b303fbf0c9f136f174c69e75bac3b633a23f876e",
-        "revCount": 361,
-        "type": "git",
-        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
+        "lastModified": 1621095447,
+        "narHash": "sha256-DY6l/4FR+wi5ahKiBAYgXtXmV6GLc0bDVNypDEkBS0w=",
+        "owner": "colinxs",
+        "repo": "home",
+        "rev": "793456e47fb8abbead1b20e64095c350f35cd2d2",
+        "type": "github"
       },
       "original": {
         "dir": "nix-home",
-        "type": "git",
-        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
+        "owner": "colinxs",
+        "repo": "home",
+        "type": "github"
       }
     },
     "nixpkgs": {
