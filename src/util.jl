@@ -2,18 +2,52 @@ subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if h
 
 function get_sha256(fetcher_name, fetcher_args)
     @debug "Calling nix-prefetch" fetcher_name fetcher_args
-    io = IOBuffer(JSON.json(fetcher_args))
+    stdin = IOBuffer(JSON.json(fetcher_args))
+    stderr = IOBuffer()
     cmd = pipeline(
-        `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin=io, stderr=devnull
+        `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin, stderr
     )
-    return strip(read(cmd, String))
+    try
+        strip(read(cmd, String))
+    catch
+        str = sprint() do io
+            for (k, v) in fetcher_args
+                println(io, k, '=', v)
+            end
+        end
+        msg = """
+        Failed to run nix-prefetch for fetcher: $fetcher_name
+        Arguments:
+
+        $(str)
+
+        Error message:
+
+        $(String(take!(stderr)))
+        """
+        nixsourcerer_error(msg)
+        rethrow()
+    end
 end
 
 function get_cargosha256(pkg)
     # Not sure what exactly to override here..
     # See: https://github.com/Mic92/nix-update/issues/55
+    stderr = IOBuffer()
     expr = "{ sha256 }: $(pkg).cargoDeps.overrideAttrs (_: { inherit sha256; cargoSha256 = sha256; outputHash = sha256; })"
-    return strip(read(pipeline(`nix-prefetch --hash-algo sha256 --output raw $expr`, stderr=devnull); String))
+    cmd = pipeline(`nix-prefetch --hash-algo sha256 --output raw $expr`; stderr)
+    try
+        strip(read(cmd, String))
+    catch
+        msg = """
+        Failed to fetch cargosha256 for package: $pkg
+        Error message:
+
+        $(String(take!(stderr)))
+        """
+        nixsourcerer_error(msg)
+        rethrow()
+    end
 end
 
 # TODO may actually want to use <nixpkgs>
@@ -35,7 +69,20 @@ function run_julia_script(script_file::AbstractString)
     else
         `julia --project=. --color=yes --startup-file=no -O1 --compile=min $(script_file)`
     end
-    read(setenv(cmd; dir=dirname(script_file)), String)
+    stderr = IOBuffer()
+    cmd = pipeline(setenv(cmd; dir=dirname(script_file)); stderr)
+    try
+        strip(read(cmd, String))
+    catch
+        msg = """
+        Failed to run Juila script at: $script_file
+        Error message:
+
+        $(String(take!(stderr)))
+        """
+        nixsourcerer_error(msg)
+        rethrow()
+    end
     return nothing
 end
 

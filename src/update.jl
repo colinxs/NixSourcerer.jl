@@ -32,24 +32,38 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         end
 
         # Try to catch dependencies between updates
-        # shuffle!(julia_updates)
-        # shuffle!(normal_updates)
-
-        @info "Updating the following paths:"
+        shuffle!(julia_updates)
+        shuffle!(normal_updates)
+        
+        print_path = function (path)
+            path = relpath(path, pwd())
+            path = path == "." ? ". (cwd)" : path
+            j = has_julia_project(path)
+            s = has_update_script(path)
+            f = !j && !s && has_flake(path)
+            m = !j && !s && has_project(path)
+            j, s, f, m = map(x -> x ? "+" : "-", (j, s, f, m)) 
+            str = @sprintf "%-4sJ%-3sS%-3sF%-3sM%-3s%-10s" "" j s f m ""
+            printstyled(str, color=:magenta)
+            println(path)
+        end
+        printstyled("Updating the following paths:\n", color=Base.info_color(), bold=true)
         for path in normal_updates
-            print(
-                "F=$(Int(has_flake(path))) ",
-                "M=$(Int(has_project(path))) ",
-                "J=$(Int(has_julia_project(path))) ",
-                "S=$(Int(has_update_script(path))) |",
-            )
-            println(relpath(path, pwd()))
+            print_path(path)
         end
         for path in julia_updates
-            has_script = has_update_script(path)
-            print("F=0 M=0 J=$(Int(!has_script && has_julia_project(path))) S=$(Int(has_script)) |")
-            println(relpath(path, pwd()))
+            print_path(path)
         end
+        println()
+
+        # DEBUG
+        for path in normal_updates
+            _update(path, config)
+        end
+        for path in julia_updates
+            _update(path, config)
+        end
+        return
 
         workers = length(normal_updates) == 1 ? 1 : get(config, "workers", 1)::Integer
         @sync begin
@@ -60,12 +74,11 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
                     asyncmap(path -> _update(path, config), normal_updates; ntasks=workers)
                 end
             end
-            begin
-                # Have to do Julia script updates sequentially as
-                # depot is not safe to async Pkg operations
-                for path in julia_updates
-                    @async _update(path, config)
-                end
+            # TODO seems to be fine after disabling registry updates. Revisit.
+            # Have to do Julia script updates sequentially as
+            # depot is not safe to async Pkg operations
+            for path in julia_updates
+                @async _update(path, config)
             end
         end
 
@@ -83,21 +96,23 @@ has_flake(path) = isfile(get_flake(path))
 has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== nothing
 
 function _update(path, config)
+    rpath = relpath(path, pwd())
+    printstyled("Updating $rpath\n", color=:yellow, bold=true)
     if has_update_script(path)
         run_julia_script(get_update_script(path))
-        @info "Updated using script at $path. Skipped updating NixManifest.toml/flake.nix/Manifest.toml."
+        println("Updated using script at $rpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.")
     else
         if has_flake(path)
             update_flake(path)
-            @info "Updated flake at $path"
+            printstyled("Updated flake at $rpath\n", color=:green, bold=true)
         end
         if has_julia_project(path)
             update_julia_project(path)
-            @info "Updated Julia project at $path"
+            printstyled("Updated Julia project at $rpath\n", color=:green, bold=true)
         end
         if has_project(path)
             update_package(path; config)
-            @info "Updated NixManifest.toml at $path"
+            printstyled("Updated NixManifest.toml at $rpath\n", color=:green, bold=true)
         end
     end
 
@@ -105,17 +120,16 @@ function _update(path, config)
 end
 
 function update_flake(path)
-    @info path
     flake = get_flake(path)
     cmd = `nix-shell -p nixUnstable --command 'nix flake update'`
     run(pipeline(setenv(cmd; dir=path), stderr=devnull))
-    return nothing
+    return path
 end
 
 function update_julia_project(path)
     cmd = `julia --project=$(path) --startup-file=no --history-file=no -e 'using Pkg; Pkg.update()'`
-    run(setenv(cmd; dir=path))
-    return nothing
+    run(pipeline(setenv(cmd, dir=path), stderr=devnull))
+    return path
 end
 
 function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
@@ -148,6 +162,7 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
 end
 
 function update!(package::Package, name::AbstractString)
+    rpath = relpath(dirname(package.project_file), pwd())
     try
         project_spec = package.project.specs[name]
         manifest_source = HANDLERS[project_spec["type"]](name, project_spec)
@@ -155,8 +170,10 @@ function update!(package::Package, name::AbstractString)
         merge_recursively!(manifest_source.meta, get(project_spec, "meta", Dict()))
 
         package.manifest.sources[name] = manifest_source
+
+        printstyled("    Updated package $name from $rpath\n", color=:green)
     catch e
-        # nixsourcerer_error("Could not update source $name")
+        nixsourcerer_error("Could not update source $name from $rpath")
         rethrow()
     end
     return package

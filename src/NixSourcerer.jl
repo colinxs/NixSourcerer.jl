@@ -14,6 +14,7 @@ using ArgParse
 using Pkg
 using Random
 using URIs
+using Printf
 
 export update
 export update_package

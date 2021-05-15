@@ -221,7 +221,21 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
         in
         mapAttrs getFields (import "$(manifest_file)" {})
     """
-    raw = strip(read(pipeline(`nix eval --json "($expr)"`, stderr=devnull), String)) 
+    
+    stderr = IOBuffer()
+    cmd = pipeline(`nix eval --json "($expr)"`; stderr)
+    raw = try
+        strip(read(cmd, String))
+    catch
+        msg = """
+        Failed to read manifest at: $manifest_file
+        Error message:
+
+        $(String(take!(stderr)))
+        """
+        nixsourcerer_error(msg)
+        rethrow()
+    end
     json = JSON.parse(raw)
 
     manifest = Manifest()
