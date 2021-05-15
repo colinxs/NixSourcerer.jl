@@ -36,4 +36,4 @@ jobs:
           echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
 
       - name: Run Test
-        run: nix run .#test 
+        run: nix run .#run-test 
