@@ -37,7 +37,7 @@
           julia = mur.julia-bin.latest;
           juliaPlatform = mur.juliaPlatform;
 
-          julia-wrapped = juliaPlatform.buildJuliaWrapper {
+          julia-wrapped = juliaPlatform.mkJuliaWrapper {
             defaultDepots = true;
             activeProject = ./.;
             extraWrapperArgs = {
@@ -50,28 +50,24 @@
               nixfmt 
             ];
           };
-          
-          depot = juliaPlatform.buildJuliaDepot {
-            depot = import ./Depot.nix { pkgs = (pkgs // { inherit juliaPlatform; }); };
-          }; 
             
-          main = pkgs.writeScriptBin "nix-sourcerer" ''
+          nix-sourcerer = pkgs.writeScriptBin "nix-sourcerer" ''
             #!${pkgs.runtimeShell}
             exec ${julia-wrapped}/bin/julia ${./bin/main.jl} "$@"
           '';
           
-          test = pkgs.writeScriptBin "test" ''
+          run-test = pkgs.writeScriptBin "test" ''
             #!${pkgs.runtimeShell}
             exec ${julia-wrapped}/bin/julia -e 'using Pkg; Pkg.test()' 
           '';
         in rec {
           legacyPackages = {
-            inherit julia-wrapped depot;
+            inherit julia-wrapped nix-sourcerer run-test;
           };
 
           defaultApp = apps."nix-sourcerer";
-          apps."nix-sourcerer" = flake-utils.lib.mkApp { drv = main; };
-          apps."test" = flake-utils.lib.mkApp { drv = test; };
+          apps."nix-sourcerer" = flake-utils.lib.mkApp { drv = nix-sourcerer; };
+          apps."run-test" = flake-utils.lib.mkApp { drv = run-test; };
           apps.julia  = flake-utils.lib.mkApp { drv = julia-wrapped; name = "julia"; };
           
           devShell = pkgs.mkShell {
