@@ -70,8 +70,8 @@ function update!(package::Package, name::AbstractString)
         merge_recursively!(manifest_source.meta, get(project_spec, "meta", Dict()))
 
         package.manifest.sources[name] = manifest_source
-    catch
-        nixsourcerer_error("Could not update source $name")
+    catch e
+        # nixsourcerer_error("Could not update source $name")
         rethrow()
     end
     return package
