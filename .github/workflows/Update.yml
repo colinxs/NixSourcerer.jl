@@ -1,10 +1,10 @@
-name: CI
+name: Update 
 on:
-  - push
-  - pull_request
-  - workflow
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 jobs:
-  Test:
+  Update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4
