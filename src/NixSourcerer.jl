@@ -8,7 +8,7 @@ using Base
 using TOML
 using JSON
 using HTTP
-using GitCommand
+using Git
 using Dates
 using ArgParse
 using Pkg

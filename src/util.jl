@@ -103,3 +103,7 @@ function sanitize_name(name)
     allowed=r"[^A-Za-z0-9+-._?=]"
     return replace(name, allowed => '_')
 end
+
+quote_string(s) = "'$s'"
+
+

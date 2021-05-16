@@ -35,11 +35,11 @@ git-tree-sha1 = "8c14294a079216000a0bdca5ec5a447f073ddc9d"
 uuid = "78b55507-aeef-58d4-861c-77aaff3498b1"
 version = "0.20.1+7"
 
-[[GitCommand]]
+[[Git]]
 deps = ["Git_jll"]
-git-tree-sha1 = "d4633859cf3f8c75f385c70095f8f07d4a1739d1"
-uuid = "49b5b516-ca3f-4003-a081-42bdcf55082d"
-version = "3.0.1"
+git-tree-sha1 = "d7bffc3fe097e9589145493c08c41297b457e5d0"
+uuid = "d7ba0133-e1db-5d97-8f8c-041e4b3a1eb2"
+version = "1.2.1"
 
 [[Git_jll]]
 deps = ["Artifacts", "Expat_jll", "Gettext_jll", "JLLWrappers", "LibCURL_jll", "Libdl", "Libiconv_jll", "OpenSSL_jll", "PCRE2_jll", "Pkg", "Zlib_jll"]
@@ -148,9 +148,9 @@ uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "ea79e4c9077208cd3bc5d29631a26bc0cff78902"
+git-tree-sha1 = "00cfd92944ca9c760982747e9a1d0d5d86ab1e5a"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.2.1"
+version = "1.2.2"
 
 [[Printf]]
 deps = ["Unicode"]

@@ -6,7 +6,7 @@ const GITHUB_SCHEMA = SchemaSet(
     SimpleSchema("owner", String, true),
     SimpleSchema("repo", String, true),
     ExclusiveSchema(
-        ("rev", "branch", "tag", "release"), (String, String, String, String), true
+        ("rev", "branch", "tag", "release", "latest_semver_tag"), (String, String, String, String, Bool), true
     ),
     SimpleSchema("submodule", Bool, false),
 )
@@ -15,19 +15,23 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     submodule = get(spec, "submodule", false)
     owner = spec["owner"]
     repo = spec["repo"]
+    url = "https://github.com/$(owner)/$(repo).git"
 
     if haskey(spec, "rev")
-        rev = version = spec["rev"]
+        rev = ver = spec["rev"]
     elseif haskey(spec, "branch")
         rev = github_get_rev_sha_from_ref(owner, repo, "heads/$(spec["branch"])")
-        version = spec["branch"]
+        ver = spec["branch"]
     elseif haskey(spec, "tag")
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
-        version = spec["tag"]
+        ver = spec["tag"]
+    elseif haskey(spec, "latest_semver_tag")
+        ref, rev, ver = git_latest_semver_tag(url)
+        ver = string(ver)
     elseif haskey(spec, "release")
         tag = github_api_get(owner, repo, "releases/$(spec["release"])")["tag_name"]
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
-        version = tag
+        ver = tag
     else
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
@@ -35,10 +39,10 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     if submodule
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
         new_spec["rev"] = rev
-        new_spec["url"] = "https://github.com/$(owner)/$(repo).git"
+        new_spec["url"] = url
         new_spec["name"] = git_short_rev(rev) 
         source = git_handler(name, new_spec)
-        source.version = version
+        source.version = ver
         return source
     else
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
@@ -47,7 +51,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         source = archive_handler(name, new_spec)
         return Source(;
             pname=name,
-            version,
+            version=ver,
             fetcher_name=source.fetcher_name,
             fetcher_args=source.fetcher_args,
         )

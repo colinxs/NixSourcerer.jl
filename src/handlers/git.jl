@@ -2,7 +2,7 @@
 
 const GIT_SCHEMA = SchemaSet(
     SimpleSchema("url", String, true),
-    ExclusiveSchema(("rev", "branch", "tag"), (String, String, String), true),
+    ExclusiveSchema(("rev", "branch", "tag", "latest_semver_tag"), (String, String, String, Bool), true),
     SimpleSchema("submodule", Bool, false),
 )
 
@@ -11,26 +11,32 @@ function git_handler(name, spec)
     builtin = get(spec, "builtin", false)
     submodule = get(spec, "submodule", false)
     url = spec["url"]
-
+    
     if haskey(spec, "rev")
         # TODO is this correct when not sourceifying commit? 
         # It's what Nix builtins.fetchGit defaults to.
         # Should be refs/heads/HEAD but that errors.
         ref = "HEAD"
         rev = spec["rev"]
+        ver = rev
     elseif haskey(spec, "branch")
         ref = "refs/heads/$(spec["branch"])"
         rev = git_ref2rev(url, ref)
+        ver = spec["branch"] 
     elseif haskey(spec, "tag")
         ref = "refs/tags/$(spec["tag"])"
         rev = git_ref2rev(url, ref)
+        ver = spec["tag"] 
+    elseif haskey(spec, "latest_semver_tag")
+        ref, rev, ver = git_latest_semver_tag(url)
+        ver = string(ver)
     else
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
 
     fetcher_args = subset(spec, "url")
-    fetcher_args["rev"] = rev
     fetcher_args["name"] = get(spec, "name", git_short_rev(rev))
+    fetcher_args["rev"] = rev
     if builtin && submodule
         # TODO nix 2.4 fetchGit
         error("Cannot fetch submodules with builtins.fetchGit (until Nix 2.4)")
@@ -47,7 +53,7 @@ function git_handler(name, spec)
         fetcher_args["sha256"] = get_sha256(fetcher_name, fetcher_args)
     end
 
-    return Source(; pname=name, version=rev, fetcher_name, fetcher_args)
+    return Source(; pname=name, version=ver, fetcher_name, fetcher_args)
 end
 
 # TODO kind of a hack
@@ -62,3 +68,39 @@ function git_ref2rev(url::AbstractString, ref::AbstractString)
     @assert match(r"\b([a-f0-9]{40})\b", rev) != nothing
     return rev
 end
+#  git -c 'versionsort.suffix=-' \
+#     ls-remote --exit-code --refs --sort='version:refname' --tags "$URL" '*.*.*' \
+#     | tail --lines=1 \
+#     | cut --delimiter='/' --fields=3
+function git_latest_semver_tag(url::AbstractString; prefix::AbstractString = "")
+    args = map(
+        identity,
+        [
+            "-c",
+            "versionsort.suffix=-",
+            "ls-remote",
+            "--exit-code",
+            "--refs",
+            "--sort=version:refname",
+            "--tags",
+            url,
+        ],
+    )
+    cmd = `$(git()) $args`
+    lines = readlines(pipeline(cmd, stderr=stderr))
+    parsed = map(lines) do l
+        rev, ref = split(strip(l))
+        m = match(r"^refs/tags/(.*)", ref)
+        m === nothing ? (rev, ref, nothing) : (rev, ref, tryparse(VersionNumber, only(m.captures)))
+    end
+    valid = filter(parsed) do (rev, ref, v)
+        v !== nothing && v.build === () && v.prerelease === ()
+    end
+    if length(valid) > 0
+        sort!(valid, by = x -> x[3])
+        return valid[end]
+    else
+        return nothing
+    end
+end
+# cut --delimiter='/' --fields=3
