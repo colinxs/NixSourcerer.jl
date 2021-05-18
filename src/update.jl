@@ -2,93 +2,62 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     isdir(path) || nixsourcerer_error("Not a directory: $(path)")
 
     if get(config, "recursive", false)
-        julia_updates = String[]
-        normal_updates = String[]
-        if should_update(path)
-            push!(
-                if (has_update_script(path) || has_julia_project(path))
-                    julia_updates
-                else
-                    normal_updates
-                end,
-                path,
-            )
-        end
-
+        paths = String[]
+        should_update(path) && push!(paths, path)
         for (root, dirs, files) in walkdir(path)
             for dir in dirs
                 path = joinpath(root, dir)
-                if should_update(path)
-                    push!(
-                        if (has_update_script(path) || has_julia_project(path))
-                            julia_updates
-                        else
-                            normal_updates
-                        end,
-                        path,
-                    )
-                end
+                should_update(path) && push!(paths, path)
             end
         end
 
         # Try to catch dependencies between updates
-        shuffle!(julia_updates)
-        shuffle!(normal_updates)
+        shuffle!(paths)
 
         print_path = function (path)
             path = cleanpath(path) 
             path = path == "." ? ". (cwd)" : path
-            j = has_julia_project(path)
-            s = has_update_script(path)
+            s = (!get(config, "ignore-script", false) && has_update_script(path))
+            j = !s && has_julia_project(path)
             f = !j && !s && has_flake(path)
             n = !j && !s && has_project(path)
-            j, s, f, n = map(x -> x ? "+" : "-", (j, s, f, n))
-            str = @sprintf "%-4sJ%-3sS%-3sF%-3sN%-3s%-10s" "" j s f n ""
+            s, j, f, n = map(x -> x ? "+" : "-", (s, j, f, n))
+            str = @sprintf "%-4sS%-3sJ%-3sF%-3sN%-3s%-10s" "" s j f n ""
             printstyled(str; color=:magenta)
             return println(path)
         end
 
         printstyled("Updating the following paths:\n"; color=:blue, bold=true)
-        printstyled("J = (J)ulia Project | "; color=:blue, bold=true)
         printstyled("S = Update (S)cript | "; color=:blue, bold=true)
+        printstyled("J = (J)ulia Project | "; color=:blue, bold=true)
         printstyled("F = (F)lake | "; color=:blue, bold=true)
         printstyled("N = (N)ix Project\n\n"; color=:blue, bold=true)
 
-        foreach(print_path, normal_updates)
-        foreach(print_path, julia_updates)
+        foreach(print_path, paths)
         println()
 
         # DEBUG
-        # for path in normal_updates
-        #     _update(path, config)
-        # end
-        # for path in julia_updates
+        # for path in paths 
         #     _update(path, config)
         # end
         # return
 
         # Since we're updating N paths with M packages each try not to use N*M workers
-        workers = length(normal_updates) == 1 ? 1 : get(config, "workers", 1)::Integer
+        workers = length(paths) == 1 ? 1 : get(config, "workers", 1)::Integer
         @assert workers >= 1
         workers = round(Int, sqrt(workers), RoundUp)
 
         @sync begin
             @async begin
                 if workers == 1
-                    foreach(path -> _update(path, config), normal_updates)
+                    foreach(path -> _update(path, config), paths)
                 else
-                    asyncmap(path -> _update(path, config), normal_updates; ntasks=workers)
+                    asyncmap(path -> _update(path, config), paths; ntasks=workers)
                 end
-            end
-            # TODO seems to be fine after disabling registry updates. Revisit.
-            # Have to do Julia script updates sequentially as
-            # depot is not safe to async Pkg operations
-            for path in julia_updates
-                @async _update(path, config)
             end
         end
         
-        len = length(normal_updates) + length(julia_updates)
+        len = length(paths)
     else
         _update(path, config)
         len = 1
@@ -110,7 +79,7 @@ has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== noth
 function _update(path, config)
     cpath = cleanpath(path) 
     printstyled("Updating $cpath\n"; color=:yellow, bold=true)
-    if has_update_script(path)
+    if !get(config, "ignore-script", false) && has_update_script(path)
         run_julia_script(get_update_script(path))
         printstyled(
             "Updated using script at $cpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.\n";

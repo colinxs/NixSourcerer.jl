@@ -23,6 +23,9 @@ function parse_commandline()
         required = false
         arg_type = Int
         default = 1
+        "--ignore-script"
+        help = "Whether to skip any update.jl scripts and just update NixManifest"
+        action = :store_true
     end
 
     return parse_args(s)

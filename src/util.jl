@@ -1,5 +1,3 @@
-subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
-
 
 function get_sha256(expr::String, args::Vector{String} = [ "--hash-algo", "sha256" ])
     expr = 
@@ -27,55 +25,16 @@ function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,Any})
         expr = "$fetcher_name $(Nix.print(fetcher_args))"
         return get_sha256(expr)
     end
-    # stdin = IOBuffer(JSON.json(fetcher_args))
-    # stderr = IOBuffer()
-    # cmd = pipeline(
-    #     `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin, stderr
-    # )
-    # try
-    #     strip(read(cmd, String))
-    # catch
-    #     str = sprint() do io
-    #         for (k, v) in fetcher_args
-    #             println(io, k, '=', v)
-    #         end
-    #     end
-    #     msg = """
-    #     Failed to run nix-prefetch for fetcher: $fetcher_name
-    #     Arguments:
-    #
-    #     $(str)
-    #
-    #     Error message:
-    #
-    #     $(String(take!(stderr)))
-    #     """
-    #     nixsourcerer_error(msg)
-    #     rethrow()
-    # end
 end
 
 function get_cargosha256(pkg)
     # Not sure what exactly to override here..
     # See: https://github.com/Mic92/nix-update/issues/55
-    stderr = IOBuffer()
     expr = "{ sha256 }: $(pkg).cargoDeps.overrideAttrs (_: { inherit sha256; cargoSha256 = sha256; outputHash = sha256; })"
-    cmd = pipeline(`nix-prefetch --hash-algo sha256 --output raw $expr`; stderr)
-    try
-        strip(read(cmd, String))
-    catch
-        msg = """
-        Failed to fetch cargosha256 for package: $pkg
-        Error message:
-
-        $(String(take!(stderr)))
-        """
-        nixsourcerer_error(msg)
-        rethrow()
-    end
+    get_sha256(expr)
 end
 
-function get_yarn_sha256(pkg)
+function get_yarnsha256(pkg)
     expr = "{ sha256 }: $(pkg).yarnDeps.overrideAttrs (_: { inherit sha256; yarnSha256 = sha256; outputHash = sha256; })"
     get_sha256(expr)
 end
@@ -178,3 +137,5 @@ function cleanpath(path::String)
     cwd = pwd()
     issubpath(path, cwd) ? relpath(path, cwd) : abspath(path)
 end
+
+subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))

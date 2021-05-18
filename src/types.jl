@@ -222,25 +222,24 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
         mapAttrs getFields (import "$(manifest_file)" {})
     """
     
-    stderr = IOBuffer()
-    cmd = pipeline(`nix eval --json "($expr)"`; stderr)
-    raw = try
-        strip(run_suppress(cmd, out=true)) 
-    catch
-        msg = """
-        Failed to read manifest at: $manifest_file
-        Error message:
-
-        $(String(take!(stderr)))
-        """
-        nixsourcerer_error(msg)
-        rethrow()
-    end
+    cmd = `nix eval --json "($expr)"`
+    raw = strip(run_suppress(cmd, out=true))
     json = JSON.parse(raw)
 
     manifest = Manifest()
     for (name, source) in json
-        args = [source[k] for k in fields]
+        args = []
+        for k in fields
+            if k == "fetcherArgs"
+                fetcher_args = Dict{Symbol,Any}()
+                for (k, v) in source[k]
+                    fetcher_args[Symbol(k)] = v
+                end
+                push!(args, fetcher_args)
+            else
+                push!(args, source[k])
+            end
+        end
         manifest.sources[name] = Source(args...)
     end
 
