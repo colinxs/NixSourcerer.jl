@@ -1,6 +1,10 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     isdir(path) || nixsourcerer_error("Not a directory: $(path)")
 
+    if get(config, "verbose", false)
+        ENV["JULIA_DEBUG"] = string(@__MODULE__)
+    end
+
     if get(config, "recursive", false)
         paths = String[]
         should_update(path) && push!(paths, path)
@@ -77,6 +81,9 @@ has_flake(path) = isfile(get_flake(path))
 has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== nothing
 
 function _update(path, config)
+    if get(config, "verbose", false)
+        ENV["JULIA_DEBUG"] = string(@__MODULE__)
+    end
     cpath = cleanpath(path) 
     printstyled("Updating $cpath\n"; color=:yellow, bold=true)
     if !get(config, "ignore-script", false) && has_update_script(path)
@@ -118,6 +125,10 @@ function update_julia_project(path)
 end
 
 function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
+    if get(config, "verbose", false)
+        ENV["JULIA_DEBUG"] = string(@__MODULE__)
+    end
+
     validate_config(config)
 
     package = read_package(package_path)

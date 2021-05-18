@@ -26,7 +26,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
         ver = spec["tag"]
     elseif haskey(spec, "latest_semver_tag")
-        ref, rev, ver = git_latest_semver_tag(url)
+        rev, ref, ver = git_latest_semver_tag(url)
         ver = string(ver)
     elseif haskey(spec, "release")
         tag = github_api_get(owner, repo, "releases/$(spec["release"])")["tag_name"]

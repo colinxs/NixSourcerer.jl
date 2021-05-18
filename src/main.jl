@@ -26,6 +26,9 @@ function parse_commandline()
         "--ignore-script"
         help = "Whether to skip any update.jl scripts and just update NixManifest"
         action = :store_true
+        "--verbose"
+        help = "Enable debug output"
+        action = :store_true
     end
 
     return parse_args(s)

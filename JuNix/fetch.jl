@@ -178,7 +178,7 @@ function select_fetcher(fetchers::Vector{Fetcher}, opts::Options)
             return fetcher
         catch e
             bt = backtrace()
-            @info "Fetcher failed: $fetcher\n$(sprint(showerror, e, bt))"
+            @error "Fetcher failed: $fetcher\n$(sprint(showerror, e, bt))"
             rethrow(e)
             continue
         end
