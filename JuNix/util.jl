@@ -31,7 +31,7 @@ function convert_sha256(data::String, base::Symbol)
     else
         error("Unknown base $base")
     end
-    return read(pipeline(`nix-hash --type sha256 $flag $data`, stderr=devnull), String)
+    return strip(run_suppress(`nix-hash --type sha256 $flag $data`, out=true))
 end
 
 function fetch_sha256(fetcher::Fetcher, opts::Options)
@@ -49,7 +49,7 @@ function fetch_sha256(fetcher::Fetcher, opts::Options)
     """
     cmd = `nix-prefetch $expr $(parsed)`
     @debug cmd
-    return strip(read(pipeline(cmd; stderr=devnull), String))
+    return strip(run_suppress(cmd; out=true))
 end
 
 function parse_fetcher(fetcher::Fetcher, opts::Options=Options())

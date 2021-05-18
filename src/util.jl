@@ -1,33 +1,58 @@
 subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
 
-function get_sha256(fetcher_name, fetcher_args)
-    @debug "Calling nix-prefetch" fetcher_name fetcher_args
-    stdin = IOBuffer(JSON.json(fetcher_args))
-    stderr = IOBuffer()
-    cmd = pipeline(
-        `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin, stderr
-    )
-    try
-        strip(read(cmd, String))
-    catch
-        str = sprint() do io
-            for (k, v) in fetcher_args
-                println(io, k, '=', v)
-            end
+
+function get_sha256(expr::String, args::Vector{String} = [ "--hash-algo", "sha256" ])
+    expr = 
+    """
+    with (import <nixpkgs> { });
+    $expr
+    """
+    cmd = `nix-prefetch $expr --output raw $args`
+    run_suppress(cmd, out=true)
+end
+
+function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,Any})
+    if startswith(fetcher_name, "builtins")
+        # builtins don't produce a derivation and so can't be fetched as expressions
+        args = [fetcher_name, "--output", "raw"]
+        if fetcher_name in NO_HASH_FETCHERS 
+            push!(args, "--no-compute-hash")
         end
-        msg = """
-        Failed to run nix-prefetch for fetcher: $fetcher_name
-        Arguments:
-
-        $(str)
-
-        Error message:
-
-        $(String(take!(stderr)))
-        """
-        nixsourcerer_error(msg)
-        rethrow()
+        for (k, v) in fetcher_args
+            push!(args, "--$(k)")
+            push!(args, string(v))
+        end
+        return run_suppress(`nix-prefetch $args`, out=true)
+    else
+        expr = "$fetcher_name $(Nix.print(fetcher_args))"
+        return get_sha256(expr)
     end
+    # stdin = IOBuffer(JSON.json(fetcher_args))
+    # stderr = IOBuffer()
+    # cmd = pipeline(
+    #     `nix-prefetch $fetcher_name --hash-algo sha256 --output raw --input json`; stdin, stderr
+    # )
+    # try
+    #     strip(read(cmd, String))
+    # catch
+    #     str = sprint() do io
+    #         for (k, v) in fetcher_args
+    #             println(io, k, '=', v)
+    #         end
+    #     end
+    #     msg = """
+    #     Failed to run nix-prefetch for fetcher: $fetcher_name
+    #     Arguments:
+    #
+    #     $(str)
+    #
+    #     Error message:
+    #
+    #     $(String(take!(stderr)))
+    #     """
+    #     nixsourcerer_error(msg)
+    #     rethrow()
+    # end
 end
 
 function get_cargosha256(pkg)
@@ -50,18 +75,24 @@ function get_cargosha256(pkg)
     end
 end
 
+function get_yarn_sha256(pkg)
+    expr = "{ sha256 }: $(pkg).yarnDeps.overrideAttrs (_: { inherit sha256; yarnSha256 = sha256; outputHash = sha256; })"
+    get_sha256(expr)
+end
+
+
 # TODO may actually want to use <nixpkgs>
 # Consider doing only if nixpkgs not on NIX_PATH
 function build_source(fetcher_name, fetcher_args)
     expr = "(with $(nixpkgs()); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
-    return run(pipeline(`nix eval $expr`; stdout=devnull))
+    return run_suppress(`nix eval $expr`)
 end
 
 function nixpkgs(args::AbstractDict=Dict())
     return "(import (import $(DEFAULT_NIX)).inputs.nixpkgs $(Nix.print(args)))"
 end
 
-function run_julia_script(script_file::AbstractString)
+function run_julia_script(script_file::String)
     script_file = abspath(script_file)
     shell_file = joinpath(dirname(script_file), "shell.nix")
     cmd = if isfile(shell_file)
@@ -106,4 +137,44 @@ end
 
 quote_string(s) = "'$s'"
 
+function run_suppress(cmd; out=false)
+    stdout = IOBuffer()
+    cmd = pipeline(cmd; stdout)
 
+    pty_slave, pty_master = open_fake_pty()
+    p = run(cmd, pty_slave, pty_slave, pty_slave, wait=false)
+    wait(p)
+    Base.close_stdio(pty_slave)
+
+    stderr = IOBuffer()
+    try
+        write(stderr, read(pty_master), '\n')
+    catch e
+        close(pty_master)
+        if !(e isa Base.IOError && e.code == Base.UV_EIO)
+            # ignore EIO on pty_master after pty_slave dies
+            rethrow() 
+        end
+    end
+    errmsg = String(take!(stderr))
+
+    if p.exitcode > 0
+        msg = "Failed to run cmd:\n$(cmd.cmd)\nError:\n\n" * errmsg
+        @error msg
+        Base.pipeline_error(p)
+    else
+        msg = "Ran cmd: $(cmd.cmd)\n" * errmsg
+        @debug msg
+    end
+
+    return out ? String(take!(stdout)) : nothing
+end
+
+function issubpath(path::String, parent::String)
+    return startswith(abspath(path), rstrip(abspath(parent), '/'))
+end
+
+function cleanpath(path::String)
+    cwd = pwd()
+    issubpath(path, cwd) ? relpath(path, cwd) : abspath(path)
+end

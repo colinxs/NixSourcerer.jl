@@ -36,7 +36,7 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         shuffle!(normal_updates)
 
         print_path = function (path)
-            path = relpath(path, pwd())
+            path = cleanpath(path) 
             path = path == "." ? ". (cwd)" : path
             j = has_julia_project(path)
             s = has_update_script(path)
@@ -108,27 +108,27 @@ has_flake(path) = isfile(get_flake(path))
 has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== nothing
 
 function _update(path, config)
-    rpath = relpath(path, pwd())
-    printstyled("Updating $rpath\n"; color=:yellow, bold=true)
+    cpath = cleanpath(path) 
+    printstyled("Updating $cpath\n"; color=:yellow, bold=true)
     if has_update_script(path)
         run_julia_script(get_update_script(path))
         printstyled(
-            "Updated using script at $rpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.\n";
+            "Updated using script at $cpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.\n";
             color=:green,
             bold=true,
         )
     else
         if has_flake(path)
             update_flake(path)
-            printstyled("Updated flake at $rpath\n"; color=:green, bold=true)
+            printstyled("Updated flake at $cpath\n"; color=:green, bold=true)
         end
         if has_julia_project(path)
             update_julia_project(path)
-            printstyled("Updated Julia project at $rpath\n"; color=:green, bold=true)
+            printstyled("Updated Julia project at $cpath\n"; color=:green, bold=true)
         end
         if has_project(path)
             update_package(path; config)
-            printstyled("Updated NixManifest.toml at $rpath\n"; color=:green, bold=true)
+            printstyled("Updated NixManifest.toml at $cpath\n"; color=:green, bold=true)
         end
     end
 
@@ -178,7 +178,7 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
 end
 
 function update!(package::Package, name::AbstractString)
-    rpath = relpath(dirname(package.project_file), pwd())
+    cpath = cleanpath(dirname(package.project_file))
     try
         project_spec = package.project.specs[name]
         manifest_source = HANDLERS[project_spec["type"]](name, project_spec)
@@ -187,9 +187,9 @@ function update!(package::Package, name::AbstractString)
 
         package.manifest.sources[name] = manifest_source
 
-        printstyled("    Updated package $name from $rpath\n"; color=:green)
+        printstyled("    Updated package $name from $cpath\n"; color=:green)
     catch e
-        nixsourcerer_error("Could not update source $name from $rpath")
+        nixsourcerer_error("Could not update source $name from $cpath")
         rethrow()
     end
     return package

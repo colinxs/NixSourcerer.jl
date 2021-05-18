@@ -1,4 +1,3 @@
-using NixSourcerer
 using TOML
 using Downloads: download
 using Tar
@@ -6,19 +5,22 @@ using GitCommand
 using p7zip_jll
 using Test
 
+using NixSourcerer
+using NixSourcerer: run_suppress
+
 noall(cmd::Cmd) = pipeline(cmd; stdout=devnull, stderr=devnull)
 
 function nix_file_sha256(path)
-    return strip(read(pipeline(`nix-hash --type sha256 --base32 --flat $path`, stderr=devnull), String))
+    return strip(run_suppress(`nix-hash --type sha256 --base32 --flat $path`, out=true))
 end
 
 function nix_dir_sha256(path)
-    return strip(read(pipeline(`nix-hash --type sha256 --base32 $path`, stderr=devnull), String))
+    return strip(run_suppress(`nix-hash --type sha256 --base32 $path`, out = true))
 end
 
 function nix_eval_source_attr(dir, attr)
     expr = "( (import $(dir)/NixManifest.nix {}).$(attr) )"
-    return strip(read(pipeline(`nix eval --raw $(expr)`, stderr=devnull), String))
+    return strip(run_suppress(`nix eval --raw $(expr)`, out=true))
 end
 
 function compare_source_attr(dir, truth, attr::AbstractString)
@@ -38,7 +40,7 @@ end
 function with_unpack(fn::Function, archive_path::AbstractString; strip::Bool=false)
     mktempdir() do dst
         if endswith(archive_path, ".zip")
-            run(pipeline(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`, stderr=devnull))
+            run_suppress(`$(p7zip_jll.p7zip()) x $archive_path -o$(dst)`)
         else
             Tar.extract(`$(p7zip_jll.p7zip()) x $archive_path -so`, dst)
         end
@@ -74,8 +76,8 @@ end
 function with_clone_and_checkout(fn, url, ref_or_rev; leave_git=false)
     mktempdir() do dir
         out = joinpath(dir, "out")
-        run(pipeline(`$(git()) clone $(url) $(out)`, stderr=devnull))
-        run(pipeline(`$(git()) -C $(out) checkout $(ref_or_rev)`, stderr=devnull))
+        run_suppress(`$(git()) clone $(url) $(out)`)
+        run_suppress(`$(git()) -C $(out) checkout $(ref_or_rev)`)
         if !leave_git
             rm(joinpath(out, ".git"); recursive=true, force=true)
         end

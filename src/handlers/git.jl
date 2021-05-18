@@ -34,23 +34,24 @@ function git_handler(name, spec)
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
 
-    fetcher_args = subset(spec, "url")
-    fetcher_args["name"] = get(spec, "name", git_short_rev(rev))
-    fetcher_args["rev"] = rev
+    fetcher_args = Dict{Symbol,Any}()
+    fetcher_args[:url] = spec["url"]
+    fetcher_args[:name] = get(spec, "name", git_short_rev(rev))
+    fetcher_args[:rev] = rev
     if builtin && submodule
         # TODO nix 2.4 fetchGit
         error("Cannot fetch submodules with builtins.fetchGit (until Nix 2.4)")
     elseif builtin && !submodule
         fetcher_name = "builtins.fetchGit"
-        fetcher_args["ref"] = ref
+        fetcher_args[:ref] = ref
         # TODO
         # Force build since nix-prefetch doesn't built builtins.fetchGit
         # build_source(fetcher_name, fetcher_args)
     else
         # TODO fetchgit doesn't have ref option
         fetcher_name = "pkgs.fetchgit"
-        fetcher_args["fetchSubmodules"] = submodule
-        fetcher_args["sha256"] = get_sha256(fetcher_name, fetcher_args)
+        fetcher_args[:fetchSubmodules] = submodule
+        fetcher_args[:sha256] = get_sha256(fetcher_name, fetcher_args)
     end
 
     return Source(; pname=name, version=ver, fetcher_name, fetcher_args)
@@ -58,7 +59,7 @@ end
 
 # TODO kind of a hack
 function git_ref2rev(url::AbstractString, ref::AbstractString)
-    output = strip(read(`$(git()) ls-remote $url $ref`, String))
+    output = strip(run_suppress(`$(git()) ls-remote $url $ref`, out=true))
     lines = split(output, '\n')
     @assert length(lines) == 1
     columns = split(lines[1], '\t')

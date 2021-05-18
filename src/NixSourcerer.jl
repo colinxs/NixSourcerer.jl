@@ -16,9 +16,17 @@ using Random
 using URIs
 using Printf
 
+Base.include(@__MODULE__, joinpath(Sys.BINDIR, "..", "share", "julia", "test", "testhelpers", "FakePTYs.jl"))
+using .FakePTYs: open_fake_pty
+
 export update
 export update_package
 export Nix
+
+const NO_HASH_FETCHERS = (
+    "builtins.fetchGit",
+)
+
 
 include("Nix.jl")
 using .Nix

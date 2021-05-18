@@ -28,7 +28,7 @@ mutable struct Source
     version::String
     name::String
     fetcher_name::String
-    fetcher_args::Dict{String,Any}
+    fetcher_args::Dict{Symbol,Any}
     meta::Dict{String,Any}
 end
 
@@ -225,7 +225,7 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
     stderr = IOBuffer()
     cmd = pipeline(`nix eval --json "($expr)"`; stderr)
     raw = try
-        strip(read(cmd, String))
+        strip(run_suppress(cmd, out=true)) 
     catch
         msg = """
         Failed to read manifest at: $manifest_file
