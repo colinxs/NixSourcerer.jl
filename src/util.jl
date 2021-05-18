@@ -68,9 +68,9 @@ function run_julia_script(script_file::String)
         "-e",
     ]
     shell_file = joinpath(dirname(script_file), "shell.nix")
-    if isfile(shell_file) 
+    if isfile(shell_file)
         push!(jlcmd, "'$preamble'")
-        cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"` 
+        cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"`
     else
         push!(jlcmd, "$preamble")
         cmd = `$jlcmd`
@@ -106,6 +106,10 @@ end
 quote_string(s) = "'$s'"
 
 function run_suppress(cmd; out=false)
+    if get(ENV, "JULIA_DEBUG", nothing) == string(@__MODULE__)
+        return out ? read(cmd, String) : (run(cmd); nothing)
+    end
+
     stdout = IOBuffer()
     cmd = pipeline(cmd; stdout)
 
@@ -128,7 +132,7 @@ function run_suppress(cmd; out=false)
 
     if p.exitcode > 0
         msg = "Failed to run cmd:\n$(cmd.cmd)\nError:\n\n" * errmsg
-        @error msg
+        println(msg)
         Base.pipeline_error(p)
     else
         msg = "Ran cmd: $(cmd.cmd)\n" * errmsg
@@ -151,7 +155,7 @@ subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if h
 
 has_nix_shell(path) = isfile(joinpath(path, "shell.nix"))
 
-function url_name(url) 
+function url_name(url)
     uri = URI(url)
-    git_short_rev(bytes2hex(sha256("$(uri.host)$(uri.path)")))
+    return git_short_rev(bytes2hex(sha256("$(uri.host)$(uri.path)")))
 end
