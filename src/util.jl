@@ -87,9 +87,15 @@ end
 
 git_short_rev(rev) = SubString(rev, 1:7)
 
+# Taken from https://github.com/NixOS/nix/blob/bd6cf25952a42afabea822141798566e0f0583b3/src/libexpr/lexer.l#L91
 function sanitize_name(name)
-    allowed = r"[^A-Za-z0-9+-._?=]"
-    return replace(name, allowed => '_')
+    valid = r"^[a-zA-Z\_][a-zA-Z0-9\_\'\-]*$"
+    allowed = r"[^a-zA-Z0-9\_\'\-]"
+    name = replace(name, allowed => '_')
+    while match(valid, name) == nothing
+        name = name[2:end] 
+    end
+    return name
 end
 
 quote_string(s) = "'$s'"

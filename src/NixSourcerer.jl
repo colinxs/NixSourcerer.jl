@@ -27,7 +27,6 @@ const NO_HASH_FETCHERS = (
     "builtins.fetchGit",
 )
 
-
 include("Nix.jl")
 using .Nix
 
