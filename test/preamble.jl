@@ -6,7 +6,7 @@ using p7zip_jll
 using Test
 
 using NixSourcerer
-using NixSourcerer: run_suppress
+using NixSourcerer: run_suppress, sanitize_name, git_short_rev, url_name
 
 noall(cmd::Cmd) = pipeline(cmd; stdout=devnull, stderr=devnull)
 
@@ -32,7 +32,7 @@ function compare_source_attr(dir, truth, attr::AbstractString)
 end
 
 function compare_source_attrs(dir, truth)
-    @testset "attr: $(attr)" for attr in keys(truth)
+    @testset "attr: $(attr)" for attr in sort(collect(keys(truth)))
         @test compare_source_attr(dir, truth, attr)
     end
 end

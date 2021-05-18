@@ -18,36 +18,38 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     url = "https://github.com/$(owner)/$(repo).git"
 
     if haskey(spec, "rev")
-        rev = ver = spec["rev"]
+        rev = spec["rev"]
+        ver = git_short_rev(rev)
     elseif haskey(spec, "branch")
         rev = github_get_rev_sha_from_ref(owner, repo, "heads/$(spec["branch"])")
         ver = spec["branch"]
     elseif haskey(spec, "tag")
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
-        ver = spec["tag"]
+        ver = splitpath(spec["tag"])[end]
     elseif haskey(spec, "latest_semver_tag")
         rev, ref, ver = git_latest_semver_tag(url)
         ver = string(ver)
     elseif haskey(spec, "release")
         tag = github_api_get(owner, repo, "releases/$(spec["release"])")["tag_name"]
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
-        ver = tag
+        ver = splitpath(tag)[end]
     else
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
 
+    source_name = sanitize_name("$(repo)-$(ver)")
     if submodule
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
         new_spec["rev"] = rev
         new_spec["url"] = url
-        new_spec["name"] = git_short_rev(rev) 
+        new_spec["name"] = source_name 
         source = git_handler(name, new_spec)
         source.version = ver
         return source
     else
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
         new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
-        new_spec["name"] = git_short_rev(rev) 
+        new_spec["name"] = source_name 
         source = archive_handler(name, new_spec)
         return Source(;
             pname=name,

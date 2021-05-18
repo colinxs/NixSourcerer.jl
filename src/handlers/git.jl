@@ -18,7 +18,7 @@ function git_handler(name, spec)
         # Should be refs/heads/HEAD but that errors.
         ref = "HEAD"
         rev = spec["rev"]
-        ver = rev
+        ver = git_short_rev(rev)
     elseif haskey(spec, "branch")
         ref = "refs/heads/$(spec["branch"])"
         rev = git_ref2rev(url, ref)
@@ -26,7 +26,7 @@ function git_handler(name, spec)
     elseif haskey(spec, "tag")
         ref = "refs/tags/$(spec["tag"])"
         rev = git_ref2rev(url, ref)
-        ver = spec["tag"] 
+        ver = splitpath(spec["tag"])[end]
     elseif haskey(spec, "latest_semver_tag")
         ref, rev, ver = git_latest_semver_tag(url)
         ver = string(ver)

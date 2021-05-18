@@ -15,6 +15,7 @@ using Pkg
 using Random
 using URIs
 using Printf
+using SHA
 
 Base.include(@__MODULE__, joinpath(Sys.BINDIR, "..", "share", "julia", "test", "testhelpers", "FakePTYs.jl"))
 using .FakePTYs: open_fake_pty

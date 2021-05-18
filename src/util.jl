@@ -93,7 +93,7 @@ function sanitize_name(name)
     allowed = r"[^a-zA-Z0-9\_\'\-]"
     name = replace(name, allowed => '_')
     while match(valid, name) == nothing
-        name = name[2:end] 
+        name = name[2:end]
     end
     return name
 end
@@ -146,3 +146,7 @@ subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if h
 
 has_nix_shell(path) = isfile(joinpath(path, "shell.nix"))
 
+function url_name(url) 
+    uri = URI(url)
+    git_short_rev(bytes2hex(sha256("$(uri.host)$(uri.path)")))
+end

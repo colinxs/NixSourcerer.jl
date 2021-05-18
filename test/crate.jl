@@ -7,6 +7,7 @@ include("preamble.jl")
     version = "0.7.1"
     url = "https://crates.io/api/v1/crates/$(pname)/$(version)/download#crate.tar.gz"
     sha256 = with_unpack(nix_dir_sha256, download(url); strip=true)
+    name = sanitize_name("$(pname)-$(version)")
 
     toml = Dict(
         "test1" => Dict(
@@ -22,12 +23,17 @@ include("preamble.jl")
         "test1.fetcherName" => "pkgs.fetchzip",
         "test1.fetcherArgs.url" => url,
         "test1.fetcherArgs.sha256" => sha256,
+        "test1.fetcherArgs.name" => name,
+
         "test2.fetcherName" => "builtins.fetchTarball",
         "test2.fetcherArgs.url" => url,
         "test2.fetcherArgs.sha256" => sha256,
+        "test2.fetcherArgs.name" => name, 
+
         "test3.fetcherName" => "builtins.fetchTarball",
         "test3.fetcherArgs.url" => url,
         "test3.fetcherArgs.sha256" => sha256,
+        "test3.fetcherArgs.name" => name, 
     )
     runtest(toml, truth)
 end

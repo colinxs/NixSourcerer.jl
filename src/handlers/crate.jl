@@ -12,7 +12,7 @@ function crate_handler(name::AbstractString, spec::AbstractDict)
 
     new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
     new_spec["url"] = crate_tarball_url(pname, version)
-    new_spec["name"] = sanitize_name(get(spec, "name", "$(pname)=$(version)"))
+    new_spec["name"] = sanitize_name(get(spec, "name", "$(pname)-$(version)"))
 
     source = archive_handler(name, new_spec)
 
