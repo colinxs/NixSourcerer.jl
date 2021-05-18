@@ -17,9 +17,8 @@ include("preamble.jl")
             "owner" => owner,
             "repo" => repo,
             "rev" => rev,
-            "builtin" => false,
         ),
-        "test2" => Dict("type" => "github", "owner" => owner, "repo" => repo, "rev" => rev),
+        "test2" => Dict("type" => "github", "owner" => owner, "repo" => repo, "rev" => rev, "builtin" => true),
         "test3" => Dict(
             "type" => "github",
             "owner" => owner,

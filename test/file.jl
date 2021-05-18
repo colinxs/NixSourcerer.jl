@@ -8,7 +8,7 @@ include("preamble.jl")
     name = url_name(url)
     toml = Dict(
         "test1" => Dict("type" => "file", "url" => url, "builtin" => false),
-        "test2" => Dict("type" => "file", "url" => url),
+        "test2" => Dict("type" => "file", "url" => url, "builtin" => true),
     )
     truth = Dict(
         "test1.fetcherName" => "pkgs.fetchurl",

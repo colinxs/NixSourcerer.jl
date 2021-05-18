@@ -66,10 +66,15 @@ function run_julia_script(script_file::String)
         "-O1",
         "--compile=min",
         "-e",
-        "'$preamble'",
     ]
     shell_file = joinpath(dirname(script_file), "shell.nix")
-    cmd = isfile(shell_file) ? `nix-shell $shell_file --run "$(join(jlcmd, ' '))"` : `$jlcmd`
+    if isfile(shell_file) 
+        push!(jlcmd, "'$preamble'")
+        cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"` 
+    else
+        push!(jlcmd, "$preamble")
+        cmd = `$jlcmd`
+    end
     run_suppress(setenv(cmd; dir=dirname(script_file)))
     return nothing
 end

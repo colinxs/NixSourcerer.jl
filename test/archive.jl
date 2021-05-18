@@ -7,8 +7,8 @@ include("preamble.jl")
     sha256 = with_unpack(nix_dir_sha256, download(url); strip=true)
     name = url_name(url)
     toml = Dict(
-        "test1" => Dict("type" => "archive", "url" => url, "builtin" => false),
-        "test2" => Dict("type" => "archive", "url" => url),
+        "test1" => Dict("type" => "archive", "url" => url),
+        "test2" => Dict("type" => "archive", "url" => url, "builtin" => true),
     )
     truth = Dict(
         "test1.fetcherName" => "pkgs.fetchzip",
