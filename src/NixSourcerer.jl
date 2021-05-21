@@ -16,6 +16,7 @@ using Random
 using URIs
 using Printf
 using SHA
+using Test
 
 Base.include(@__MODULE__, joinpath(Sys.BINDIR, "..", "share", "julia", "test", "testhelpers", "FakePTYs.jl"))
 using .FakePTYs: open_fake_pty
@@ -41,6 +42,7 @@ include("handlers/archive.jl")
 include("handlers/crate.jl")
 
 include("update.jl")
+include("test.jl")
 include("main.jl")
 
 const SCHEMAS = Dict(

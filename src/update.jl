@@ -93,6 +93,7 @@ function _update(path, config)
             color=:green,
             bold=true,
         )
+        return path
     else
         if has_flake(path)
             update_flake(path)
@@ -106,6 +107,7 @@ function _update(path, config)
             update_package(path; config)
             printstyled("Updated NixManifest.toml at $cpath\n"; color=:green, bold=true)
         end
+        return path
     end
 
     return nothing

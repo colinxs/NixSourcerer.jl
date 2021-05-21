@@ -3,7 +3,7 @@ const FILE_SCHEMA = SchemaSet(
 )
 
 function file_handler(name::AbstractString, spec::AbstractDict)
-    builtin = get(spec, "builtin", true)
+    builtin = get(spec, "builtin", false)
 
     fetcher_args = Dict{Symbol,Any}()
     fetcher_args[:url] = spec["url"]

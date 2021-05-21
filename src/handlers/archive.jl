@@ -4,7 +4,7 @@ const ARCHIVE_SCHEMA = SchemaSet(
 
 function archive_handler(name::AbstractString, spec::AbstractDict)
     # NOTE builtin fetcher appears to be faster
-    builtin = get(spec, "builtin", true)
+    builtin = get(spec, "builtin", false)
 
     uri = URI(spec["url"])
     fetcher_name = builtin ? "builtins.fetchTarball" : "pkgs.fetchzip"

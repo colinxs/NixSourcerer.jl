@@ -39,16 +39,13 @@
 
           julia-wrapped = juliaPlatform.mkJuliaWrapper {
             defaultDepots = true;
+            startupFile = false;
+            historyFile=false;
+            temporaryDepot = true;
             activeProject = ./.;
-            extraWrapperArgs = {
-              args = [ "--compile=min" "-O1" ];
-            };
-            extraPackages = with pkgs; [
-              nix
-              nix-prefetch
-              nixpkgs-fmt
-              nixfmt 
-            ];
+            compile = "min";
+            optLevel = 1;
+            extraPackages = with pkgs; [ nix nix-prefetch nixpkgs-fmt nixfmt  ];
           };
             
           nix-sourcerer = dev.writeShellScriptBin "nix-sourcerer" {} ''
@@ -56,7 +53,7 @@
           '';
           
           run-test = dev.writeShellScriptBin "test" {} ''
-            exec ${julia-wrapped}/bin/julia -e 'using Pkg; Pkg.test()' 
+            exec ${julia-wrapped}/bin/julia -e 'using Pkg; Pkg.test()'
           '';
         in rec {
           legacyPackages = {

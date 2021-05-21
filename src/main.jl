@@ -10,13 +10,13 @@ function parse_commandline()
         arg_type = String
         default = pwd()
         "-n", "--names"
-        help = "Source names to update in PATH"
+        help = "Source names to update in `path`"
         required = false
         arg_type = String
         nargs = '+'
         default = nothing
         "-r", "--recursive"
-        help = "Recursively update all environments under PATH"
+        help = "Recursively update all environments under `path`"
         action = :store_true
         "-w", "--workers"
         help = "Number of worker threads to use"
@@ -25,6 +25,9 @@ function parse_commandline()
         default = 1
         "--ignore-script"
         help = "Whether to skip any update.jl scripts and just update NixManifest"
+        action = :store_true
+        "--test"
+        help = "Whether to run tests instead of update."
         action = :store_true
         "--verbose"
         help = "Enable debug output"
@@ -39,7 +42,11 @@ function main()
     path = config["path"]
     delete!(config, "path")
     isempty(config["names"]) && delete!(config, "names")
-    update(path; config)
+    if get(config, "test", false)
+        test(path; config)
+    else
+        update(path; config)
+    end
     return nothing
 end
 
