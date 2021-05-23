@@ -67,6 +67,11 @@ function __init__()
         # nix-prefetch
         nixpath = get(ENV, "NIX_PATH", nothing)
         nixpath === nothing && nixsourcerer_error("NIX_PATH is empty!")
+        @info nixpath
+        @info nixpath
+        @info nixpath
+        @info nixpath
+        @info nixpath
         entries = filter(split(nixpath, ':')) do entry
             name, path = split(entry, '=')
             name == "nixpkgs"
