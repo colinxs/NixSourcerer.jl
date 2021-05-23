@@ -41,10 +41,14 @@
             defaultDepots = true;
             startupFile = false;
             historyFile=false;
-            temporaryDepot = true;
-            activeProject = ./.;
+            color = true;
             compile = "min";
             optLevel = 1;
+
+            activeProject = ./.;
+
+            disableRegistryUpdate = true;
+            instantiate = true;
             extraPackages = with pkgs; [ nix nix-prefetch nixpkgs-fmt nixfmt  ];
           };
             

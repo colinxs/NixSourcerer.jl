@@ -41,24 +41,20 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         println()
 
         # DEBUG
-        # for path in paths 
+        # Threads.@threads for path in paths 
         #     _update(path, config)
         # end
         # return
 
         # Since we're updating N paths with M packages each try not to use N*M workers
         workers = length(paths) == 1 ? 1 : get(config, "workers", 1)::Integer
+        workers = config["workers"] = round(Int, sqrt(workers), RoundUp)
         @assert workers >= 1
-        workers = round(Int, sqrt(workers), RoundUp)
 
-        @sync begin
-            @async begin
-                if workers == 1
-                    foreach(path -> _update(path, config), paths)
-                else
-                    asyncmap(path -> _update(path, config), paths; ntasks=workers)
-                end
-            end
+        if workers == 1
+            foreach(path -> _update(path, config), paths)
+        else
+            asyncmap(path -> _update(path, config), paths; ntasks=workers)
         end
         
         len = length(paths)

@@ -75,7 +75,7 @@ function run_julia_script(script_file::String)
         push!(jlcmd, "$preamble")
         cmd = `$jlcmd`
     end
-    run_suppress(setenv(cmd; dir=dirname(script_file)))
+    run(setenv(cmd; dir=dirname(script_file)))
     return nothing
 end
 
