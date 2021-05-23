@@ -1,6 +1,8 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     isdir(path) || nixsourcerer_error("Not a directory: $(path)")
 
+    setup()
+
     if get(config, "verbose", false)
         ENV["JULIA_DEBUG"] = string(@__MODULE__)
     end
@@ -68,6 +70,26 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
 
     return nothing
 end
+
+function setup()
+    try
+        # We don't want overlays or anything else as it breaks nix-prefetch
+        nixpath = get(ENV, "NIX_PATH", nothing)
+        nixpath === nothing && nixsourcerer_error("NIX_PATH is empty!")
+        entries = filter(split(nixpath, ':')) do entry
+            name, path = split(entry, '=')
+            name == "nixpkgs"
+        end
+        ENV["NIX_PATH"] = only(entries)
+        return nothing
+    catch e
+        Base.@warn "Failed to initialize the environment" exception = (e, catch_backtrace())
+    end
+
+    # We only want to update the registry once per session
+    Pkg.Registry.update()
+end
+
 
 should_update(path) = has_update_script(path) || has_project(path) || has_flake(path)
 get_update_script(path) = joinpath(path, "update.jl")

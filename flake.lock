@@ -96,11 +96,11 @@
     "general-registry": {
       "flake": false,
       "locked": {
-        "lastModified": 1621759857,
-        "narHash": "sha256-wdsp3jBEfde3Ut+IcBICKXxTP1wHnUmyrD2uwGU8Ifk=",
+        "lastModified": 1621809911,
+        "narHash": "sha256-9vmMkySEv5ih/KQ/VBxCeDDSpBjeT/yCu8YU4qF3v/s=",
         "owner": "JuliaRegistries",
         "repo": "General",
-        "rev": "8028b5232b6ecbac51b774fcde2e2b8086a63d5a",
+        "rev": "3e09cd864ab628814d4d6a4ec6deec1a83ed13d1",
         "type": "github"
       },
       "original": {
@@ -178,18 +178,16 @@
         "flake-utils": "flake-utils_2",
         "home-manager": "home-manager",
         "neovim-nightly-overlay": "neovim-nightly-overlay",
-        "nixpkgs": [
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs_2",
         "nixpkgs-fork": "nixpkgs-fork"
       },
       "locked": {
         "dir": "nix-home",
-        "lastModified": 1621758871,
-        "narHash": "sha256-PjMNHkvLcCbxCxoClQfRGqzTJhW28uilqo7oKNymRe4=",
+        "lastModified": 1621813757,
+        "narHash": "sha256-xgvVf8b1kpSr7SGNYx6n3nSB5OK0e4UiQn6f6JMDo9Y=",
         "owner": "colinxs",
         "repo": "home",
-        "rev": "8d7ff03943efa09a63717cf44422a5632809bd84",
+        "rev": "fe8ab0c88b9a0538317252b130a702d300294f21",
         "type": "github"
       },
       "original": {
@@ -234,9 +232,24 @@
       "locked": {
         "lastModified": 1621640932,
         "narHash": "sha256-fXJ+OdiqSzdjFU+wkAciws+m5pEhFjFjjZmCLE6DpO4=",
-        "owner": "nixos",
+        "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "9971c5d1a40d4e9ff8159ec6595cb9e91da7d438",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "ref": "nixos-unstable",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1621728353,
+        "narHash": "sha256-cgRKslcI/lG5wnxgt1z6OGm+JnzmBqyR8m/JzpUNpYQ=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "900115a4f7fdd9189e7803ca781a65be663f2c89",
         "type": "github"
       },
       "original": {
@@ -268,7 +281,7 @@
         "flake-utils": "flake-utils",
         "general-registry": "general-registry",
         "nix-home": "nix-home",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs_3",
         "personal-registry": "personal-registry"
       }
     }

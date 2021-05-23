@@ -61,29 +61,6 @@ const HANDLERS = Dict(
     "git" => git_handler,
 )
 
-function __init__()
-    try
-        # We don't want overlays or anything else as it breaks
-        # nix-prefetch
-        nixpath = get(ENV, "NIX_PATH", nothing)
-        nixpath === nothing && nixsourcerer_error("NIX_PATH is empty!")
-        @info nixpath
-        @info nixpath
-        @info nixpath
-        @info nixpath
-        @info nixpath
-        entries = filter(split(nixpath, ':')) do entry
-            name, path = split(entry, '=')
-            name == "nixpkgs"
-        end
-        ENV["NIX_PATH"] = only(entries)
-        return nothing
-    catch e
-        Base.@warn "Failed to initialize the environment" exception = (e, catch_backtrace())
-    end
-end
-
-
 const DEFAULT_NIX = joinpath(@__DIR__, "../../default.nix")
 
 end # module

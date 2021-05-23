@@ -1,11 +1,10 @@
-
 function get_sha256(expr::String, args::Vector{String}=["--hash-algo", "sha256"])
     expr = """
            with (import <nixpkgs> { });
            $expr
            """
     cmd = `nix-prefetch $expr --output raw $args`
-    return strip(run_suppress(cmd; out=true))
+    return check_sha256(strip(run_suppress(cmd; out=true)))
 end
 
 function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,Any})
@@ -19,7 +18,7 @@ function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,Any})
             push!(args, "--$(k)")
             push!(args, string(v))
         end
-        return strip(run_suppress(`nix-prefetch $args`; out=true))
+        return check_sha256(strip(run_suppress(`nix-prefetch $args`; out=true)))
     else
         expr = "$fetcher_name $(Nix.print(fetcher_args))"
         return get_sha256(expr)
@@ -38,6 +37,14 @@ function get_yarnsha256(pkg)
     return get_sha256(expr)
 end
 
+function check_sha256(str)
+    # From nix/src/libutil/hash.cc
+    if match(r"^[0123456789abcdfghijklmnpqrsvwxyz]{52}$", str) === nothing
+        error("Invalid Base-32 SHA256: $str")
+    end
+    return str 
+end
+
 # TODO may actually want to use <nixpkgs>
 # Consider doing only if nixpkgs not on NIX_PATH
 function build_source(fetcher_name, fetcher_args)
@@ -54,17 +61,11 @@ function run_julia_script(script_file::String)
     preamble = """
                using Pkg
                Pkg.UPDATED_REGISTRY_THIS_SESSION[] = true
-               Pkg.instantiate()
+               Pkg.instantiate(update_registry=false)
                include("$script_file")
                """
     jlcmd = [
         "julia",
-        "--project=$(dirname(script_file))",
-        "--color=yes",
-        "--startup-file=no",
-        "--history-file=no",
-        "-O1",
-        "--compile=min",
         "-e",
     ]
     shell_file = joinpath(dirname(script_file), "shell.nix")
@@ -75,7 +76,9 @@ function run_julia_script(script_file::String)
         push!(jlcmd, "$preamble")
         cmd = `$jlcmd`
     end
-    run(setenv(cmd; dir=dirname(script_file)))
+    env = copy(ENV)
+    env["JULIA_PROJECT"] = dirname(script_file)
+    run(setenv(cmd, env, dir=dirname(script_file)))
     return nothing
 end
 
