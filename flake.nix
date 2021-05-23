@@ -32,12 +32,11 @@
       systemOutputs = flake-utils.lib.eachSystem ["x86_64-linux"] (system:
         let
           pkgs = import inputs.nixpkgs { inherit system; inherit (self) overlay; };
-          mur = nix-home.packages."${system}";
+          mur = nix-home.legacyPackages."${system}".mur;
           dev = mur.dev;
           julia = mur.julia-bin.latest;
-          juliaPlatform = mur.juliaPlatform;
 
-          julia-wrapped = juliaPlatform.mkJuliaWrapper {
+          julia-wrapped = mur.mkJuliaWrapper {
             defaultDepots = true;
             startupFile = false;
             historyFile=false;
