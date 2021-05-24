@@ -42,7 +42,7 @@ jobs:
       - name: Update
         run: |
           nix --version
-          nix run .#nix-sourcerer -- --recursive --workers 4
+          nix run .#nix-sourcerer -- --ignore-script --recursive --workers 4
         env:
           JULIA_DEBUG: NixSourcerer
 

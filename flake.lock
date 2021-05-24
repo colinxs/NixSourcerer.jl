@@ -96,11 +96,11 @@
     "general-registry": {
       "flake": false,
       "locked": {
-        "lastModified": 1621834737,
-        "narHash": "sha256-MVDLDQYRzbuC82zgK7nDB8qvD+4OyD/683FBrq/7j+o=",
+        "lastModified": 1621841838,
+        "narHash": "sha256-LXpaGi9znGz0qFSCg5rR0qH24gB5f32elAp9HLthch0=",
         "owner": "JuliaRegistries",
         "repo": "General",
-        "rev": "d8f6d95905ae086f770a0234c31652bceae42e9e",
+        "rev": "91844c074b5bfa1b2bcbc21507dbde8f035e4f05",
         "type": "github"
       },
       "original": {
@@ -183,11 +183,11 @@
       },
       "locked": {
         "dir": "nix-home",
-        "lastModified": 1621834764,
-        "narHash": "sha256-Tf5BqRCTtQ0fUMDj3Cg1ypGAfYhXBQQqmkeWJ7q/VMg=",
+        "lastModified": 1621843446,
+        "narHash": "sha256-pkYMe87TMbXuArc5N8xzPhvUXDmhp4n9Vuo5X/uQcBc=",
         "owner": "colinxs",
         "repo": "home",
-        "rev": "2f691264356449e7e479105639028cc8c7208ccd",
+        "rev": "45cba5272727578194c82bd3a98703db7f8a9491",
         "type": "github"
       },
       "original": {
