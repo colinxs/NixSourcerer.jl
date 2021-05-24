@@ -29,7 +29,7 @@ jobs:
      
 
       - name: Restore Nix Store
-        run: if [[ -e "$HOME/.cache/nix/store" ]]; then rsync -aHAX --exclude "$HOME/.cache/nix/store/" /nix/store; fi
+        run: if [[ -e "$HOME/.cache/nix/store" ]]; then rsync -aHAXv --exclude "$HOME/.cache/nix/store/" /nix/store; fi
       
       - name: Install nixUnstable
         run: |
@@ -46,5 +46,5 @@ jobs:
       #   run: nix run .#run-test 
 
       - name: Copy Nix Store
-        run: rsync -aHAX --delete --exclude '*.lock' /nix/store/  "$HOME/.cache/nix/store"
+        run: rsync -aHAXv --delete --exclude '*.lock' /nix/store/  "$HOME/.cache/nix/store"
 
