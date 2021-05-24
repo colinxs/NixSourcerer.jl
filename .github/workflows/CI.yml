@@ -30,11 +30,9 @@ jobs:
             access-tokens = github.com=${{ secrets.PAT }}
      
 
+      # TODO add to other nix repos 
       - name: Restore Nix Store
-        run: |
-          if [[ -e "$HOME/.cache ]]; then ls -la ~/.cache; fi
-          if [[ -e "$HOME/.cache/nix ]]; then ls -la ~/.cache/nix; fi
-          if [[ -e "$HOME/.cache/nix/store" ]]; then sudo rsync -aHAXv "$HOME/.cache/nix/store/" /nix/store; fi
+        run: if [[ -e "$HOME/.cache/nix/store" ]]; then sudo rsync -aHAXv "$HOME/.cache/nix/store/" /nix/store; fi
       
       - name: Install nixUnstable
         run: |
@@ -47,8 +45,8 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
           extraPullNames: nix-community
       
-      # - name: Run Test
-      #   run: nix run .#run-test 
+      - name: Run Test
+        run: nix run .#run-test 
 
       - name: Copy Nix Store
         run: rsync -aHAXv --delete --exclude '*.lock' /nix/store/  "$HOME/.cache/nix/store"
