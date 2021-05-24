@@ -17,8 +17,9 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
             end
         end
 
+        # TODO makes debugging failures difficult
         # Try to catch dependencies between updates
-        shuffle!(paths)
+        # shuffle!(paths)
 
         print_path = function (path)
             path = cleanpath(path) 
