@@ -184,7 +184,8 @@ function update!(package::Package, name::AbstractString)
 
         package.manifest.sources[name] = manifest_source
 
-        printstyled("    Updated package $name ($(manifest_source.fetcher_args[:name])) from $cpath\n"; color=:green)
+        # printstyled("    Updated package $name ($(manifest_source.fetcher_args[:name])) from $cpath\n"; color=:green)
+        printstyled("    Updated package $name from $cpath\n"; color=:green)
     catch e
         nixsourcerer_error("Could not update source $name from $cpath")
         rethrow()
