@@ -14,10 +14,11 @@ jobs:
           path: |
             ~/.cache/nix
             ~/.julia/artifacts
-          key: ${{ runner.os }}-${{ hashFiles('nix-home/**/flake.lock','nix-home/**/NixManifest.nix') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/flake.lock','**/NixManifest.nix','**/Manifest.toml') }}
           restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('nix-home/**/NixManifest.nix') }}
-            ${{ runner.os }}-${{ hashFiles('nix-home/**/flake.lock') }}
+            ${{ runner.os }}-${{ hashFiles('**/NixManifest.nix') }}
+            ${{ runner.os }}-${{ hashFiles('**/flake.lock') }}
+            ${{ runner.os }}-${{ hashFiles('**/Manifest.toml') }}
 
       - uses: cachix/install-nix-action@v13
         with:
