@@ -31,7 +31,7 @@ jobs:
           path: |
             ~/.julia/artifacts
             ~/.julia/packages
-          key: ${{ hashFiles('./nix-home/**/Manifest.toml') }}
+          key: ${{ hashFiles('**/Manifest.toml') }}
 
       - name: Install nixUnstable
         run: |
