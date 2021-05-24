@@ -19,7 +19,7 @@ include("preamble.jl")
         "test1.fetcherArgs.url" => url,
         "test1.fetcherArgs.rev" => rev,
         "test1.fetcherArgs.sha256" => sha256,
-        "test1.fetcherArgs.name" => git_short_rev(rev),
+        # "test1.fetcherArgs.name" => git_short_rev(rev),
 
         "test2.fetcherName" => "builtins.fetchGit",
         "test2.fetcherArgs.url" => url,
