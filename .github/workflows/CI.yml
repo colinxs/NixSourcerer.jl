@@ -28,7 +28,7 @@ jobs:
             access-tokens = github.com=${{ secrets.PAT }}
       
       - name: Restore Nix Store
-        run: if [[ -e "$HOME/.cache/nix/store ]]; then rsync -aHAX --exclude "$HOME/.cache/nix/store/" /nix/store; fi
+        run: if [[ -e "$HOME/.cache/nix/store" ]]; then rsync -aHAX --exclude "$HOME/.cache/nix/store/" /nix/store; fi
       
       - name: Install nixUnstable
         run: |
