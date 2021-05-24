@@ -41,8 +41,8 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
           extraPullNames: nix-community
       
-      - name: Run Test
-        run: nix run .#run-test 
+      # - name: Run Test
+      #   run: nix run .#run-test 
 
       - name: Copy Nix Store
         run: rsync -aHAX --delete --exclude '*.lock' /nix/store/  "$HOME/.cache/nix/store"
