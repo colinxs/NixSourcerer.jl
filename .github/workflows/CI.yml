@@ -16,6 +16,8 @@ jobs:
             ~/.julia/artifacts
           key: ${{ runner.os }}-${{ hashFiles('nix-home/**/flake.lock','nix-home/**/NixManifest.nix') }}
           restore-keys: |
+            ${{ runner.os }}-${{ hashFiles('nix-home/**/NixManifest.nix') }}
+            ${{ runner.os }}-${{ hashFiles('nix-home/**/flake.lock') }}
             ${{ runner.os }}-
 
       - uses: cachix/install-nix-action@v13
