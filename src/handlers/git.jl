@@ -36,7 +36,7 @@ function git_handler(name, spec)
 
     fetcher_args = Dict{Symbol,Any}()
     fetcher_args[:url] = spec["url"]
-    fetcher_args[:name] = get(spec, "name", git_short_rev(rev))
+    # fetcher_args[:name] = get(spec, "name", git_short_rev(rev))
     fetcher_args[:rev] = rev
     if builtin && submodule
         # TODO nix 2.4 fetchGit

@@ -23,17 +23,17 @@ include("preamble.jl")
         "test1.fetcherName" => "builtins.fetchTarball",
         "test1.fetcherArgs.url" => url,
         "test1.fetcherArgs.sha256" => sha256,
-        "test1.fetcherArgs.name" => name,
+        # "test1.fetcherArgs.name" => name,
 
         "test2.fetcherName" => "pkgs.fetchzip",
         "test2.fetcherArgs.url" => url,
         "test2.fetcherArgs.sha256" => sha256,
-        "test2.fetcherArgs.name" => name, 
+        # "test2.fetcherArgs.name" => name, 
 
         "test3.fetcherName" => "pkgs.fetchzip",
         "test3.fetcherArgs.url" => url,
         "test3.fetcherArgs.sha256" => sha256,
-        "test3.fetcherArgs.name" => name, 
+        # "test3.fetcherArgs.name" => name, 
     )
     runtest(toml, truth)
 end
