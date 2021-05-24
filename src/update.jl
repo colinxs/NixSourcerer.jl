@@ -74,13 +74,9 @@ end
 function setup()
     try
         # We don't want overlays or anything else as it breaks nix-prefetch
-        nixpath = get(ENV, "NIX_PATH", nothing)
-        nixpath === nothing && nixsourcerer_error("NIX_PATH is empty!")
-        entries = filter(split(nixpath, ':')) do entry
-            name, path = split(entry, '=')
-            name == "nixpkgs"
-        end
-        ENV["NIX_PATH"] = only(entries)
+        nixpkgs = strip(read(`nix eval '(<nixpkgs>)'`, String))
+        nixpath = "nixpkgs=$(nixpkgs)"
+        ENV["NIX_PATH"] = nixpath
         return nothing
     catch e
         Base.@warn "Failed to initialize the environment (NIX_PATH = '$(get(ENV, "NIX_PATH", nothing))')" exception = (e, catch_backtrace())
