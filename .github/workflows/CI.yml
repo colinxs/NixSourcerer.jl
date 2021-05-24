@@ -38,7 +38,13 @@ jobs:
           nix-env -iA nixUnstable -f '<nixpkgs>'
           echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
       
+      - name: Build 
+        run: |
+          nix build .#run-test 
+      
       - name: Run Test
         run: |
           nix run .#run-test 
-          ls -la /nix/store | grep versions
+
+      - name: GC Store
+        run: nix store gc

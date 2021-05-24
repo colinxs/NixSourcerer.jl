@@ -60,3 +60,6 @@ jobs:
             [1]: https://github.com/peter-evans/create-pull-request
           branch: updates
           delete-branch: true
+      
+      - name: GC Store
+        run: nix store gc
