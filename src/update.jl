@@ -83,7 +83,7 @@ function setup()
         ENV["NIX_PATH"] = only(entries)
         return nothing
     catch e
-        Base.@warn "Failed to initialize the environment" exception = (e, catch_backtrace())
+        Base.@warn "Failed to initialize the environment (NIX_PATH = '$(get(ENV, "NIX_PATH", nothing))')" exception = (e, catch_backtrace())
     end
 
     # We only want to update the registry once per session
