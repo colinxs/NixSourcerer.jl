@@ -32,7 +32,8 @@ jobs:
 
       - name: Restore Nix Store
         run: |
-          ls -la ~/.cache/nix
+          ls -la ~/.cache
+          if [[ -e "$HOME/.cache/nix ]]; then ls -la ~/.cache/nix; fi
           if [[ -e "$HOME/.cache/nix/store" ]]; then rsync -aHAXv --exclude "$HOME/.cache/nix/store/" /nix/store; fi
       
       - name: Install nixUnstable
