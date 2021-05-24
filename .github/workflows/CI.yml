@@ -32,7 +32,9 @@ jobs:
           path: |
             ~/.julia/artifacts
             ~/.julia/packages
-          key: ${{ hashFiles('**/Manifest.toml') }}
+          key: ${{ hashFiles('./nix-home/**/Project.toml') }}-${{ hashFiles('./nix-home/**/Manifest.toml') }}
+          restore-keys: |
+            ${{ hashFiles('./nix-home/**/Project.toml') }}-
 
       - name: Install nixUnstable
         run: |

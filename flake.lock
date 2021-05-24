@@ -96,11 +96,11 @@
     "general-registry": {
       "flake": false,
       "locked": {
-        "lastModified": 1621841838,
-        "narHash": "sha256-LXpaGi9znGz0qFSCg5rR0qH24gB5f32elAp9HLthch0=",
+        "lastModified": 1621844182,
+        "narHash": "sha256-y7/NmgmfKzMbRRdsI3MHWIboLSZZx5qUqCRWSYVaqwc=",
         "owner": "JuliaRegistries",
         "repo": "General",
-        "rev": "91844c074b5bfa1b2bcbc21507dbde8f035e4f05",
+        "rev": "5a96126febbff835d521a08904346fa7d0add382",
         "type": "github"
       },
       "original": {
