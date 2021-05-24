@@ -34,7 +34,7 @@ jobs:
         run: |
           if [[ -e "$HOME/.cache ]]; then ls -la ~/.cache; fi
           if [[ -e "$HOME/.cache/nix ]]; then ls -la ~/.cache/nix; fi
-          if [[ -e "$HOME/.cache/nix/store" ]]; then rsync -aHAXv "$HOME/.cache/nix/store/" /nix/store; fi
+          if [[ -e "$HOME/.cache/nix/store" ]]; then sudo rsync -aHAXv "$HOME/.cache/nix/store/" /nix/store; fi
       
       - name: Install nixUnstable
         run: |
