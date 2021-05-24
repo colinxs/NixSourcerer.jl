@@ -39,4 +39,6 @@ jobs:
           echo "${HOME}/.nix-profile/bin" >> $GITHUB_PATH
       
       - name: Run Test
-        run: nix run .#run-test 
+        run: |
+          nix run .#run-test 
+          ls -la /nix/store | grep versions
