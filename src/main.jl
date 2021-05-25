@@ -26,7 +26,7 @@ function parse_commandline()
         "--ignore-script"
         help = "Whether to skip any update.jl scripts and just update NixManifest"
         action = :store_true
-        "--test"
+        "--run-test"
         help = "Whether to run tests instead of update."
         action = :store_true
         "--verbose"
@@ -42,7 +42,7 @@ function main()
     path = config["path"]
     delete!(config, "path")
     isempty(config["names"]) && delete!(config, "names")
-    if get(config, "test", false)
+    if get(config, "run-test", false)
         test(path; config)
     else
         update(path; config)

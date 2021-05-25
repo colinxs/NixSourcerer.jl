@@ -162,3 +162,21 @@ function url_name(url)
     uri = URI(url)
     return git_short_rev(bytes2hex(sha256("$(uri.host)$(uri.path)")))
 end
+
+function parse_config(config)
+    validate_config(config)
+    p                  = copy(config)
+    p["verbose"]       = get(p, "verbose", false)
+    p["recursive"]     = get(p, "recursive", false)
+    p["ignore-script"] = get(p, "ignore-script", false)
+    p["run-test"]      = get(p, "run-test", false)
+    max_workers        = sum(l -> match(r"^nixbld[0-9]+:", l) !== nothing, readlines(`getent passwd`))
+    p["workers"]       = max(1, min(max_workers, get(p, "workers", 1)))
+    return p
+end
+
+function validate_config(config::AbstractDict)
+    if get(config, "recursive", true) && haskey(config, "names")
+        nixsourcerer_error("Cannot specify 'recursive' and 'names' at the same time")
+    end
+end

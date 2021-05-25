@@ -1,13 +1,14 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     isdir(path) || nixsourcerer_error("Not a directory: $(path)")
 
+    config = parse_config(config)
     setup()
 
-    if get(config, "verbose", false)
+    if config["verbose"]
         ENV["JULIA_DEBUG"] = string(@__MODULE__)
     end
 
-    if get(config, "recursive", false)
+    if config["recursive"]
         paths = String[]
         should_update(path) && push!(paths, path)
         for (root, dirs, files) in walkdir(path)
@@ -24,7 +25,7 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         print_path = function (path)
             path = cleanpath(path) 
             path = path == "." ? ". (cwd)" : path
-            s = (!get(config, "ignore-script", false) && has_update_script(path))
+            s = !config["ignore-script"] && has_update_script(path)
             j = !s && has_julia_project(path)
             f = !j && !s && has_flake(path)
             n = !j && !s && has_project(path)
@@ -50,9 +51,8 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         # return
 
         # Since we're updating N paths with M packages each try not to use N*M workers
-        workers = length(paths) == 1 ? 1 : get(config, "workers", 1)::Integer
+        workers = min(length(paths), config["workers"])
         workers = config["workers"] = round(Int, sqrt(workers), RoundUp)
-        @assert workers >= 1
 
         if workers == 1
             foreach(path -> _update(path, config), paths)
@@ -96,12 +96,9 @@ has_flake(path) = isfile(get_flake(path))
 has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== nothing
 
 function _update(path, config)
-    if get(config, "verbose", false)
-        ENV["JULIA_DEBUG"] = string(@__MODULE__)
-    end
     cpath = cleanpath(path) 
     printstyled("Updating $cpath\n"; color=:yellow, bold=true)
-    if !get(config, "ignore-script", false) && has_update_script(path)
+    if !config["ignore-script"] && has_update_script(path)
         run_julia_script(get_update_script(path))
         printstyled(
             "Updated using script at $cpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.\n";
@@ -142,7 +139,9 @@ function update_julia_project(path)
 end
 
 function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
-    if get(config, "verbose", false)
+    config = parse_config(config)
+
+    if config["verbose"] 
         ENV["JULIA_DEBUG"] = string(@__MODULE__)
     end
 
@@ -162,8 +161,7 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
         names = keys(package.project.specs)
     end
 
-    workers = length(names) == 1 ? 1 : get(config, "workers", 1)::Integer
-    @assert workers > 0
+    workers = min(length(names), config["workers"])
 
     if workers == 1
         foreach(name -> update!(package, name), names)
@@ -190,12 +188,4 @@ function update!(package::Package, name::AbstractString)
         rethrow()
     end
     return package
-end
-
-function validate_config(config::AbstractDict)
-    if get(config, "recursive", false) && haskey(config, "names")
-        nixsourcerer_error("Cannot specify 'recursive' and 'names' at the same time")
-    end
-    get(config, "workers", 1) > 0 || nixsourcerer_error("'workers' must be > 0)")
-    return nothing
 end
