@@ -24,7 +24,6 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
 
         print_path = function (path)
             path = cleanpath(path) 
-            path = path == "." ? ". (cwd)" : path
             s = !config["ignore-script"] && has_update_script(path)
             j = !s && has_julia_project(path)
             f = !j && !s && has_flake(path)
@@ -32,7 +31,7 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
             s, j, f, n = map(x -> x ? "+" : "-", (s, j, f, n))
             str = @sprintf "%-4sS%-3sJ%-3sF%-3sN%-3s%-10s" "" s j f n ""
             printstyled(str; color=:magenta)
-            return println(path)
+            return println(path == "." ? ". (cwd)" : path)
         end
 
         printstyled("Updating the following paths:\n"; color=:blue, bold=true)

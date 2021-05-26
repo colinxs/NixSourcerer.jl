@@ -164,8 +164,9 @@ function url_name(url)
 end
 
 function parse_config(config)
-    validate_config(config)
-    p                  = copy(config)
+    p = convert(Dict{String,Any}, copy(config))
+    validate_config(p)
+    p                  = convert(Dict{String,Any}, copy(config))
     p["verbose"]       = get(p, "verbose", false)
     p["recursive"]     = get(p, "recursive", false)
     p["ignore-script"] = get(p, "ignore-script", false)
@@ -180,3 +181,6 @@ function validate_config(config::AbstractDict)
         nixsourcerer_error("Cannot specify 'recursive' and 'names' at the same time")
     end
 end
+
+prefix_name(name) = "source-" * name
+
