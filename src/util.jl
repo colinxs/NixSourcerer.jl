@@ -7,7 +7,7 @@ function get_sha256(expr::String, args::Vector{String}=["--hash-algo", "sha256"]
     return check_sha256(strip(run_suppress(cmd; out=true)))
 end
 
-function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,Any})
+function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,<:Any})
     if startswith(fetcher_name, "builtins")
         # builtins don't produce a derivation and so can't be fetched as expressions
         args = [fetcher_name, "--output", "raw"]

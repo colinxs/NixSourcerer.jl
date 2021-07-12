@@ -10,18 +10,50 @@ nixsourcerer_error(msg::String...) = throw(NixSourcererError(join(msg)))
 
 Base.showerror(io::IO, err::NixSourcererError) = print(io, err.msg)
 
+
+####
+#### Fetcher 
+####
+
+# TODO merge Fetcher and Source?
+
+mutable struct Fetcher 
+    name::String
+    args::Dict{Symbol,Any}
+end
+
+function Nix.print(io::IO, fetcher::Fetcher)
+    dict = Dict(
+        :fetcher => Nix.NixText(fetcher.name),
+        :fetcherName => fetcher.name,
+        :fetcherArgs => fetcher.args,
+        :outPath => Nix.NixText("fetcher fetcherArgs"),
+    )
+    write(io, "let ")
+    for pair in dict
+        Nix.print(io, pair)
+    end
+    write(io, "in { inherit ")
+    for var in keys(dict)
+        write(io, ' ')
+        Nix.print(io, var)
+    end
+    return write(io, "; }")
+end
+
+
 ####
 #### Source
 ####
 
-const SOURCE_KEYMAP = Dict(
-    "pname" => "pname",
-    "version" => "version",
-    "name" => "name",
-    "fetcher_name" => "fetcherName",
-    "fetcher_args" => "fetcherArgs",
-    "meta" => "meta",
-)
+# const SOURCE_KEYMAP = Dict(
+#     "pname" => "pname",
+#     "version" => "version",
+#     "name" => "name",
+#     "fetcher_name" => "fetcherName",
+#     "fetcher_args" => "fetcherArgs",
+#     "meta" => "meta",
+# )
 
 mutable struct Source
     pname::String
@@ -74,6 +106,7 @@ end
 
 abstract type Schema end
 
+
 struct SimpleSchema <: Schema
     key::String
     type::Type
@@ -95,9 +128,10 @@ function validate(schema::SimpleSchema, spec)
     end
 end
 
+
 struct ExclusiveSchema{N} <: Schema
     keys::NTuple{N,String}
-    types::NTuple{N,DataType}
+    types::NTuple{N,Type}
     required::Bool
 end
 
@@ -116,6 +150,34 @@ function validate(schema::ExclusiveSchema, spec)
         nixsourcerer_error("Must specify exactly one of \"$(schema.keys)\".")
     end
 end
+
+
+struct DependentSchema{N} <: Schema
+    ikey::String
+    itype::Type
+    dkeys::NTuple{N,String}
+    dtypes::NTuple{N,Type}
+    required::Bool
+end
+
+Base.keys(schema::DependentSchema) = (schema.ikey, schema.dkeys...)
+
+function validate(schema::DependentSchema, spec)
+    if schema.required && !haskey(spec, schema.ikey)
+        nixsourcerer_error("Must specify \"$(schema.ikey)\"")
+    elseif haskey(spec, schema.ikey)
+        T = schema.itype
+        V = typeof(spec[schema.ikey])
+        @info "" T V
+        V <: T || nixsourcerer_error("Expected key \"$(schema.ikey)\" to be of type $T, got $V.")
+        for (dkey, T) in zip(schema.dkeys, schema.dtypes)
+            haskey(spec, dkey) || nixsourcerer_error("Must specify \"$(schema.dkeys)\" if providing \"$(schema.ikey)\"")
+            V = typeof(spec[dkey])
+            V <: T || nixsourcerer_error("Expected key \"$dkey\" to be of type $T, got $V.")
+        end
+    end
+end
+
 
 struct SchemaSet{N} <: Schema
     schemas::NTuple{N,Schema}
