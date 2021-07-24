@@ -58,6 +58,9 @@ end
 
 function run_julia_script(script_file::String)
     script_file = abspath(script_file)
+    shell_file = joinpath(dirname(script_file), "shell.nix")
+    flake_file = joinpath(dirname(script_file), "flake.nix")
+
     preamble = """
                using Pkg
                Pkg.UPDATED_REGISTRY_THIS_SESSION[] = true
@@ -68,16 +71,20 @@ function run_julia_script(script_file::String)
         "julia",
         "-e",
     ]
-    shell_file = joinpath(dirname(script_file), "shell.nix")
+
     if isfile(shell_file)
         push!(jlcmd, "'$preamble'")
         cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"`
+    elseif isfile(flake_file)
+        push!(jlcmd, "'$preamble'")
+        cmd = `nixUnstable develop $(dirname(flake_file)) -c julia -e $preamble` 
     else
         push!(jlcmd, "$preamble")
         cmd = `$jlcmd`
     end
     env = copy(ENV)
     env["JULIA_PROJECT"] = dirname(script_file)
+    # TODO run_suppress?
     run(setenv(cmd, env, dir=dirname(script_file)))
     return nothing
 end

@@ -34,6 +34,14 @@
           mur = nix-home.legacyPackages."${system}".mur;
           dev = mur.dev;
           julia = mur.julia-bin.latest;
+          nixUnstable = pkgs.runCommand "nixUnstable"
+            {
+              buildInputs = [ pkgs.makeWrapper ];
+            }
+            ''
+              mkdir -p $out/bin
+              ln -s ${pkgs.nixUnstable}/bin/nix $out/bin/nixUnstable
+            '';
 
           julia-wrapped = mur.mkJuliaWrapper {
             defaultDepots = true;
@@ -46,7 +54,7 @@
             disableRegistryUpdate = true;
             instantiate = true;
 
-            extraPackages = with pkgs; [ nix nix-prefetch nixpkgs-fmt nixfmt ];
+            extraPackages = with pkgs; [ nix nixUnstable nix-prefetch nixpkgs-fmt nixfmt ];
           };
 
           nix-sourcerer = dev.writeShellScriptBin "nix-sourcerer" { } ''
