@@ -191,3 +191,10 @@ end
 
 prefix_name(name) = "source-" * name
 
+function replace_variables(s::String, vars::Dict)
+    for (k, v) in vars
+        p = "@{{ $k }}"
+        s = replace(s, p => v)
+    end
+    return s
+end

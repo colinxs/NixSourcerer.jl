@@ -2,6 +2,7 @@ const CRATE_SCHEMA = SchemaSet(
     SimpleSchema("pname", String, true),
     SimpleSchema("version", String, true),
     SimpleSchema("builtin", Bool, false),
+    SimpleSchema("extraArgs", Dict, false),
 )
 
 const CRATES_IO_BASE_URL = "https://crates.io/api/v1/crates"
@@ -9,10 +10,12 @@ const CRATES_IO_BASE_URL = "https://crates.io/api/v1/crates"
 function crate_handler(name::AbstractString, spec::AbstractDict)
     pname = spec["pname"]
     version = parse_crate_version(pname, spec["version"])
+    extraArgs = get(spec, "extraArgs", Dict())
 
     new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
-    new_spec["url"] = crate_tarball_url(pname, version)
     # new_spec["name"] = sanitize_name(get(spec, "name", "$(pname)-$(version)"))
+    new_spec["url"] = crate_tarball_url(pname, version)
+    new_spec["extraArgs"] = extraArgs
 
     source = archive_handler(name, new_spec)
 

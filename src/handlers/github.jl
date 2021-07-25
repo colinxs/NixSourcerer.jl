@@ -12,6 +12,8 @@ const GITHUB_SCHEMA = SchemaSet(
     ),
     DependentSchema("assets", Union{Bool,Vector{String}}, ("release",), (String,), false),
     SimpleSchema("submodule", Bool, false),
+    SimpleSchema("builtin", Bool, false),
+    SimpleSchema("extraArgs", Dict, false),
 )
 
 # TODO add test for asset handling
@@ -22,6 +24,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     repo = spec["repo"]
     url = "https://github.com/$(owner)/$(repo).git"
     meta = Dict()
+    extraArgs = get(spec, "extraArgs", Dict())
 
     if haskey(spec, "rev")
         rev = spec["rev"]
@@ -47,15 +50,17 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     source_name = sanitize_name("$(repo)-$(ver)")
     if submodule
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
+        # new_spec["name"] = source_name 
         new_spec["rev"] = rev
         new_spec["url"] = url
-        # new_spec["name"] = source_name 
+        new_spec["extraArgs"] = extraArgs
         source = git_handler(name, new_spec)
         source.version = ver
         return source
     else
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
         new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
+        new_spec["extraArgs"] = extraArgs
         # new_spec["name"] = source_name 
         source = archive_handler(name, new_spec)
         return Source(;

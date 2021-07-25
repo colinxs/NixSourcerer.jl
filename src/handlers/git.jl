@@ -4,13 +4,19 @@ const GIT_SCHEMA = SchemaSet(
     SimpleSchema("url", String, true),
     ExclusiveSchema(("rev", "branch", "tag", "latest_semver_tag"), (String, String, String, Bool), true),
     SimpleSchema("submodule", Bool, false),
+    SimpleSchema("variables", Dict, false),
+    SimpleSchema("builtin", Bool, false),
+    SimpleSchema("extraArgs", Dict, false),
 )
 
 function git_handler(name, spec)
     # NOTE pkgs.fetchgit appears to be faster because shallow clone
     builtin = get(spec, "builtin", false)
     submodule = get(spec, "submodule", false)
-    url = spec["url"]
+    variables = get(spec, "variables", Dict())
+    url = replace_variables(spec["url"], variables) 
+    meta = Dict("variables" => variables)
+    extraArgs = get(spec, "extraArgs", Dict())
     
     if haskey(spec, "rev")
         # TODO is this correct when not sourceifying commit? 
@@ -34,9 +40,9 @@ function git_handler(name, spec)
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
 
-    fetcher_args = Dict{Symbol,Any}()
-    fetcher_args[:url] = spec["url"]
+    fetcher_args = Dict{Symbol,Any}(Symbol(k) => v for (k,v) in extraArgs)
     # fetcher_args[:name] = get(spec, "name", git_short_rev(rev))
+    fetcher_args[:url] = url 
     fetcher_args[:rev] = rev
     if builtin && submodule
         # TODO nix 2.4 fetchGit
