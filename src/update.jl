@@ -23,7 +23,7 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         # shuffle!(paths)
 
         print_path = function (path)
-            path = cleanpath(path) 
+            path = cleanpath(path)
             s = !config["ignore-script"] && has_update_script(path)
             j = !s && has_julia_project(path)
             f = !j && !s && has_flake(path)
@@ -58,7 +58,7 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         else
             asyncmap(path -> _update(path, config), paths; ntasks=workers)
         end
-        
+
         len = length(paths)
     else
         _update(path, config)
@@ -79,13 +79,14 @@ function setup()
         ENV["NIX_PATH"] = nixpath
         return nothing
     catch e
-        Base.@warn "Failed to initialize the environment (NIX_PATH = '$(get(ENV, "NIX_PATH", nothing))')" exception = (e, catch_backtrace())
+        Base.@warn "Failed to initialize the environment (NIX_PATH = '$(get(ENV, "NIX_PATH", nothing))')" exception = (
+            e, catch_backtrace()
+        )
     end
 
     # We only want to update the registry once per session
-    Pkg.Registry.update()
+    return Pkg.Registry.update()
 end
-
 
 should_update(path) = has_update_script(path) || has_project(path) || has_flake(path)
 get_update_script(path) = joinpath(path, "update.jl")
@@ -95,7 +96,7 @@ has_flake(path) = isfile(get_flake(path))
 has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== nothing
 
 function _update(path, config)
-    cpath = cleanpath(path) 
+    cpath = cleanpath(path)
     printstyled("Updating $cpath\n"; color=:yellow, bold=true)
     if !config["ignore-script"] && has_update_script(path)
         run_julia_script(get_update_script(path))
@@ -140,7 +141,7 @@ end
 function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
     config = parse_config(config)
 
-    if config["verbose"] 
+    if config["verbose"]
         ENV["JULIA_DEBUG"] = string(@__MODULE__)
     end
 
