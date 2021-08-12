@@ -168,7 +168,6 @@ function validate(schema::DependentSchema, spec)
     elseif haskey(spec, schema.ikey)
         T = schema.itype
         V = typeof(spec[schema.ikey])
-        @info "" T V
         V <: T || nixsourcerer_error("Expected key \"$(schema.ikey)\" to be of type $T, got $V.")
         for (dkey, T) in zip(schema.dkeys, schema.dtypes)
             haskey(spec, dkey) || nixsourcerer_error("Must specify \"$(schema.dkeys)\" if providing \"$(schema.ikey)\"")
