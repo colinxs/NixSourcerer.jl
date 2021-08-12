@@ -94,8 +94,10 @@ function github_get_release(owner, repo, release, assets, builtin)
         assets = collect(Iterators.flatten(map(assets) do asset
             m = match(r"r\"(.*)\"", asset)
             if m === nothing 
+                @info "NOT REGEX"
                 return [asset]
             else
+                @info "REGEX"
                 reg = Regex(only(m.captures))
                 return filter(map(a -> a["name"], rel["assets"])) do name
                     match(reg, name) !== nothing
