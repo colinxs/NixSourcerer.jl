@@ -19,9 +19,9 @@
   };
 
   inputs.nix-home = {
-    # url = "path:/home/colinxs/nix-home";
+    url = "path:/home/colinxs/nix-home";
     # url = "git+ssh://git@github.com/colinxs/home?dir=nix-home";
-    url = github:colinxs/home?dir=nix-home;
+    # url = github:colinxs/home?dir=nix-home;
   };
 
   outputs = { self, flake-utils, nix-home, ... }@inputs:
@@ -44,6 +44,8 @@
             '';
 
           julia-wrapped = mur.mkJuliaWrapper {
+            # TODO BIG BUG stale version is run because doesn't precompile.
+            # pretty sure problem is mtime.n
             defaultDepots = true;
             startupFile = false;
             historyFile = false;
@@ -53,16 +55,17 @@
 
             disableRegistryUpdate = true;
             instantiate = true;
+            activeProject = ./.;
 
             extraPackages = with pkgs; [ nix nixUnstable nix-prefetch nixpkgs-fmt nixfmt ];
           };
 
           nix-sourcerer = dev.writeShellScriptBin "nix-sourcerer" { } ''
-            exec ${julia-wrapped}/bin/julia --project=${./.} ${./bin/main.jl} "$@"
+            exec ${julia-wrapped}/bin/julia ${./bin/main.jl} "$@"
           '';
 
           run-test = dev.writeShellScriptBin "test" { } ''
-            exec ${julia-wrapped}/bin/julia --project=${./.} -e 'using Pkg; Pkg.test()'
+            exec ${julia-wrapped}/bin/julia -e 'using Pkg; Pkg.test()'
           '';
         in
         rec {
