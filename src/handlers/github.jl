@@ -4,7 +4,7 @@
 #
 
 const ARCHIVE_MIME_TYPES = (
-    "application/gzip", "application/x-bzip2", "application/x-bzip", "application/zip", "application/x-7z-compressed"
+    "application/x-xz", "application/gzip", "application/x-bzip2", "application/x-bzip", "application/zip", "application/x-7z-compressed"
 )
 
 const GITHUB_SCHEMA = SchemaSet(

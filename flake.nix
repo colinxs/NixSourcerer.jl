@@ -57,7 +57,7 @@
             instantiate = true;
             activeProject = ./.;
 
-            extraPackages = with pkgs; [ nix nixUnstable nix-prefetch nixpkgs-fmt nixfmt ];
+            extraPackages = with pkgs; [ nix nixUnstable nix-prefetch nix-prefetch-docker nixpkgs-fmt nixfmt ];
           };
 
           nix-sourcerer = dev.writeShellScriptBin "nix-sourcerer" { } ''
