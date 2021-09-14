@@ -1,8 +1,8 @@
 function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
-    isdir(path) || nixsourcerer_error("Not a directory: $(path)")
-
     config = parse_config(config)
-    setup()
+    (isfile(path) && config["recursive"]) && nixsourcerer_error("Cannot specify --recursive with a file")
+
+    setup(config)
 
     if config["verbose"]
         ENV["JULIA_DEBUG"] = string(@__MODULE__)
@@ -71,37 +71,13 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
     return nothing
 end
 
-function setup()
-    try
-        # We don't want overlays or anything else as it breaks nix-prefetch
-        nixpkgs = strip(read(`nix eval '(<nixpkgs>)'`, String))
-        nixpath = "nixpkgs=$(nixpkgs)"
-        ENV["NIX_PATH"] = nixpath
-        return nothing
-    catch e
-        Base.@warn "Failed to initialize the environment (NIX_PATH = '$(get(ENV, "NIX_PATH", nothing))')" exception = (
-            e, catch_backtrace()
-        )
-    end
-
-    # We only want to update the registry once per session
-    return Pkg.Registry.update()
-end
-
-should_update(path) = has_update_script(path) || has_project(path) || has_flake(path)
-get_update_script(path) = joinpath(path, "update.jl")
-has_update_script(path) = isfile(get_update_script(path))
-get_flake(path) = joinpath(path, "flake.nix")
-has_flake(path) = isfile(get_flake(path))
-has_julia_project(path) = Pkg.Types.projectfile_path(path; strict=true) !== nothing
-
 function _update(path, config)
     cpath = cleanpath(path)
     printstyled("Updating $cpath\n"; color=:yellow, bold=true)
-    if !config["ignore-script"] && has_update_script(path)
-        run_julia_script(get_update_script(path))
+    if has_update_script(path)
+        run_julia_script(path)
         printstyled(
-            "Updated using script at $cpath. Skipped updating NixManifest.toml/flake.nix/Manifest.toml.\n";
+            "Updated using script at $cpath. Skipped updating NixManifest.toml/$(FLAKE_FILENAME)/Manifest.toml.\n";
             color=:green,
             bold=true,
         )
@@ -125,20 +101,59 @@ function _update(path, config)
     return nothing
 end
 
+
+function setup(config)
+    # We don't want overlays or anything else as it breaks nix-prefetch
+    nixpkgs = strip(run_suppress(`nix eval '(<nixpkgs>)'`, out=true))
+    isdir(nixpkgs) || nixsourcerer_error("Could not locate <nixpkgs> in NIX_PATH")
+    ENV["NIX_PATH"] = "nixpkgs=$(nixpkgs)"
+    
+    # We only want to update the registry once per session
+    if ! config["no-update-julia-registries"]
+        run_suppress(`julia --startup-file=no --history-file=no -e 'using Pkg; Pkg.Registry.update()'`)
+        # Pkg.Registry.update()
+    end
+
+    return nothing
+end
+
+should_update(path) = has_update_script(path) || has_project(path) || has_flake(path)
+
+has_file(file_or_dir, filename) = isfile(get_file(file_or_dir, filename))
+function get_file(file_or_dir, filename)
+    file = isfile(file_or_dir) && basename(file_or_dir) == filename ? file_or_dir : joinpath(file_or_dir, filename)
+    return abspath(file)
+end
+
+get_update_script(path) = get_file(path, UPDATE_SCRIPT_FILENAME)
+has_update_script(path) = has_file(path, UPDATE_SCRIPT_FILENAME) 
+
+get_flake(path) = get_file(path, FLAKE_FILENAME)
+has_flake(path) = has_file(path, FLAKE_FILENAME) 
+
+get_julia_project(path) = get_file(path, JULIA_PROJECT_FILENAME)
+has_julia_project(path) = has_file(path, JULIA_PROJECT_FILENAME) 
+
+get_project(path) = get_file(path, PROJECT_FILENAME)
+has_project(path) = has_file(path, PROJECT_FILENAME)
+
+get_manifest(path) = get_file(isfile(path) && basename(path) == PROJECT_FILENAME ? dirname(path) : path, MANIFEST_FILENAME)
+has_manifest(path) = has_file(isfile(path) && basename(path) == PROJECT_FILENAME ? dirname(path) : path, MANIFEST_FILENAME)
+
+
 function update_flake(path)
-    flake = get_flake(path)
-    cmd = `nix-shell -p nixUnstable --command 'nix flake update'`
-    run(pipeline(setenv(cmd; dir=path); stderr=devnull))
+    path = dirname(get_flake(path))
+    run_suppress(`nix-shell -p nixUnstable --command "nix flake update $path"`)
     return path
 end
 
 function update_julia_project(path)
-    cmd = `julia --project=$(path) --startup-file=no --history-file=no -e 'using Pkg; Pkg.update()'`
-    run(pipeline(setenv(cmd; dir=path); stderr=devnull))
+    path = get_julia_project(path)
+    run_suppress(`julia --project=$path --startup-file=no --history-file=no -e 'using Pkg; Pkg.update()'`)
     return path
 end
 
-function update_package(package_path::AbstractString=pwd(); config::AbstractDict=Dict())
+function update_package(path::AbstractString=pwd(); config::AbstractDict=Dict())
     config = parse_config(config)
 
     if config["verbose"]
@@ -147,7 +162,7 @@ function update_package(package_path::AbstractString=pwd(); config::AbstractDict
 
     validate_config(config)
 
-    package = read_package(package_path)
+    package = read_package(path)
     validate(package)
 
     if haskey(config, "names")

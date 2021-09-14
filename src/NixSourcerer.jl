@@ -29,6 +29,13 @@ const NO_HASH_FETCHERS = (
     "builtins.fetchGit",
 )
 
+const UPDATE_SCRIPT_FILENAME = "update.jl"
+const FLAKE_FILENAME = "flake.nix"
+const JULIA_PROJECT_FILENAME = "Project.toml"
+const MANIFEST_FILENAME = "NixManifest.nix"
+const PROJECT_FILENAME = "NixProject.toml"
+
+
 include("Nix.jl")
 using .Nix
 
@@ -45,6 +52,8 @@ include("handlers/docker.jl")
 include("update.jl")
 include("test.jl")
 include("main.jl")
+
+include("JuNix/JuNix.jl")
 
 const SCHEMAS = Dict(
     "github" => GITHUB_SCHEMA,

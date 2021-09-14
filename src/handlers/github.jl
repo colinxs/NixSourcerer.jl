@@ -42,7 +42,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         rev, ref, ver = git_latest_semver_tag(url)
         ver = string(ver)
     elseif haskey(spec, "release")
-        tag, rev, ver, assets = github_get_release(owner, repo, spec["release"], get(spec, "assets", false), builtin)
+        tag, rev, ver, assets = github_get_release(owner, repo, spec["release"], get(spec, "assets", false), builtin, extraArgs)
         meta["assets"] = assets
     else
         nixsourcerer_error("Unknown spec: ", string(spec))
@@ -74,7 +74,7 @@ function github_get_rev_sha_from_ref(owner, repo, ref)
     return github_api_get(owner, repo, "git/ref/$ref")["object"]["sha"]
 end
 
-function github_get_release(owner, repo, release, assets, builtin)
+function github_get_release(owner, repo, release, assets, builtin, extraArgs)
     if builtin && get(ENV, "GITHUB_TOKEN", nothing) !== nothing
         nixsourcerer_error("Cannot use builtin fetcher for assets when GITHUB_TOKEN is provided")
     end
@@ -110,6 +110,9 @@ function github_get_release(owner, repo, release, assets, builtin)
     # -O $2
 
     fetcher_args = Dict{Symbol,Any}(:curlOpts => "-L --header Accept:application/octet-stream")
+    for (k, v) in extraArgs
+        fetcher_args[Symbol(k)] = v
+    end
     for asset in assets
         idx = findfirst(a -> a["name"] == asset, rel["assets"])
         info = rel["assets"][idx]

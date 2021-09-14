@@ -14,21 +14,18 @@ using Pkg.MiniProgressBars
 using TOML
 using HTTP
 using Base: UUID, SHA1
-using NixSourcerer
 using LibGit2
 
-const FLAKE_PATH = joinpath(@__DIR__, "..", "default.nix")
-
-const PKG_FETCHER = "pkgs.juliaPlatform.fetchJuliaPackage"
-const ARTIFACT_FETCHER = "pkgs.juliaPlatform.fetchJuliaArtifact"
-const PKG_SERVER_FETCHER = "pkgs.juliaPlatform.fetchPkgServer"
+using ..NixSourcerer
+using ..NixSourcerer: run_suppress
 
 const PKGS_ARCHIVE_FETCHER = "pkgs.fetchzip"
-const BUILTINS_ARCHIVE_FETCHER = "builtins.fetchTarball"
-const ARCHIVE_FETCHER = PKGS_ARCHIVE_FETCHER
-
 const PKGS_GIT_FETCHER = "pkgs.fetchgit"
+
+const BUILTINS_ARCHIVE_FETCHER = "builtins.fetchTarball"
 const BUILTINS_GIT_FETCHER = "builtins.fetchGit"
+
+const ARCHIVE_FETCHER = PKGS_ARCHIVE_FETCHER
 const GIT_FETCHER = BUILTINS_GIT_FETCHER
 
 include("./types.jl")
@@ -146,7 +143,7 @@ function generate_depot(
 end
 
 function write_depot(
-    depot::Dict{String,Fetcher}, meta::Dict{String,Any}, opts::Options, package_path::String
+    depot::Dict{String,Fetcher}, meta::Dict{String,Any}, opts::Options, package_path::String, out_path::String
 )
     io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }: {\n")
@@ -168,13 +165,13 @@ function write_depot(
         error("$depotfile_path already exists!")
     else
         @info "Writing depot to $depotfile_path"
-        open(normpath(joinpath(package_path, "Depot.nix")), "w") do f
+        open(normpath(joinpath(out_path, "Depot.nix")), "w") do f
             Nix.nixfmt(f, io)
         end
     end
 end
 
-function main(package_path::String, opts::Options=Options())
+function main(package_path::String, out_path::String = package_path, opts::Options=Options())
     if opts.pkg_server !== nothing
         ENV["JULIA_PKG_SERVER"] = opts.pkg_server
         @assert Pkg.pkg_server() == opts.pkg_server
@@ -196,7 +193,7 @@ function main(package_path::String, opts::Options=Options())
         artifact_fetchers = select_artifact_fetchers(pkgs, opts)
 
         depot = generate_depot(registry_fetchers, pkg_fetchers, artifact_fetchers)
-        write_depot(depot, meta, opts, package_path)
+        write_depot(depot, meta, opts, package_path, out_path)
         return pkgs
     end
 end

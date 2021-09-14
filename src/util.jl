@@ -56,16 +56,16 @@ function nixpkgs(args::AbstractDict=Dict())
     return "(import (import $(DEFAULT_NIX)).inputs.nixpkgs $(Nix.print(args)))"
 end
 
-function run_julia_script(script_file::String)
-    script_file = abspath(script_file)
-    shell_file = joinpath(dirname(script_file), "shell.nix")
-    flake_file = joinpath(dirname(script_file), "flake.nix")
+function run_julia_script(path::String)
+    path = get_update_script(path)
+    shell_file = joinpath(dirname(path), "shell.nix")
+    flake_file = joinpath(dirname(path), "flake.nix")
 
     preamble = """
                using Pkg
                Pkg.UPDATED_REGISTRY_THIS_SESSION[] = true
                Pkg.instantiate(update_registry=false)
-               include("$script_file")
+               include("$path")
                """
     jlcmd = [
         "julia",
@@ -83,9 +83,9 @@ function run_julia_script(script_file::String)
         cmd = `$jlcmd`
     end
     env = copy(ENV)
-    env["JULIA_PROJECT"] = dirname(script_file)
+    env["JULIA_PROJECT"] = dirname(path)
     # TODO run_suppress?
-    run(setenv(cmd, env, dir=dirname(script_file)))
+    run(setenv(cmd, env, dir=dirname(path)))
     return nothing
 end
 
@@ -180,6 +180,7 @@ function parse_config(config)
     p["run-test"]      = get(p, "run-test", false)
     max_workers        = sum(l -> match(r"^nixbld[0-9]+:", l) !== nothing, readlines(`getent passwd`))
     p["workers"]       = max(1, min(max_workers, get(p, "workers", 1)))
+    p["no-update-julia-registries"] = get(p, "no-update-julia-registries", false)
     return p
 end
 

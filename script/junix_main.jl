@@ -1,4 +1,4 @@
-include("./JuNix.jl")
+using NixSourcerer.JuNix
 
 opts = JuNix.Options(;
     nworkers=8,
@@ -10,4 +10,5 @@ opts = JuNix.Options(;
 )
 x = JuNix.main(joinpath(@__DIR__, ".."), opts)
 nothing
+
 

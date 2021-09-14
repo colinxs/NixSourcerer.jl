@@ -23,8 +23,11 @@ function parse_commandline()
         required = false
         arg_type = Int
         default = 1
-        "--ignore-script"
-        help = "Whether to skip any update.jl scripts and just update NixManifest"
+        # "--ignore-script"
+        # help = "Whether to skip any update.jl scripts and just update NixManifest"
+        # action = :store_true
+        "--no-update-julia-registries"
+        help = "Whether to skip updating local Julia registries" 
         action = :store_true
         "--run-test"
         help = "Whether to run tests instead of update."

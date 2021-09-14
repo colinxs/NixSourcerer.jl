@@ -36,16 +36,11 @@ end
 
 function fetch_sha256(fetcher::Fetcher, opts::Options)
     parsed = parse_fetcher(fetcher, opts)
-    expr = """
+    expr = 
+    """
         { nixpkgs ? <nixpkgs> }:
-        let 
-            flake = (import $(FLAKE_PATH));
-            murOverlay = flake.inputs.nix-home.overlays.mur;
-            pkgs = import nixpkgs { overlays = [ murOverlay ]; };
-        in
-        with pkgs.mur;
-        with pkgs; 
-        $(fetcher.name)
+        let pkgs = import nixpkgs { };
+        in with pkgs; $(fetcher.name)
     """
     cmd = `nix-prefetch $expr $(parsed)`
     @debug cmd

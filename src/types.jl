@@ -213,8 +213,6 @@ end
 
 # TODO it's weird that manifest is .meta but project is dict
 
-const PROJECT_FILE_NAME = "NixProject.toml"
-
 struct Project
     specs::Dict{String,Any}
 end
@@ -238,9 +236,7 @@ function validate(project::Project)
     end
 end
 
-has_project(dir::AbstractString) = isfile(joinpath(dir, PROJECT_FILE_NAME))
-
-function read_project(project_file::AbstractString=PROJECT_FILE_NAME)
+function read_project(project_file::AbstractString=PROJECT_FILENAME)
     raw = TOML.parsefile(project_file)
     # TODO hack
     for v in values(raw)
@@ -249,17 +245,16 @@ function read_project(project_file::AbstractString=PROJECT_FILE_NAME)
     return Project(raw)
 end
 
-function write_project(project::Project, project_file::AbstractString=PROJECT_FILE_NAME)
+function write_project(project::Project, project_file::AbstractString=PROJECT_FILENAME)
     open(project_file, "w") do io
         TOML.print(io, project.specs)
     end
 end
 
+
 ####
 #### Manifest
 ####
-
-const MANIFEST_FILE_NAME = "NixManifest.nix"
 
 struct Manifest
     sources::Dict{String,Source}
@@ -269,9 +264,7 @@ Manifest() = Manifest(Dict{String,Source}())
 
 function validate(manifest::Manifest) end
 
-has_manifest(dir::AbstractString) = isfile(joinpath(dir, MANIFEST_FILE_NAME))
-
-function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
+function read_manifest(manifest_file::AbstractString=MANIFEST_FILENAME)
     manifest_file = abspath(manifest_file)
     fields = ["pname", "version", "name", "fetcherName", "fetcherArgs", "meta"]
     expr = """
@@ -308,7 +301,7 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILE_NAME)
 end
 
 function write_manifest(
-    manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILE_NAME
+    manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILENAME
 )
     io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
@@ -334,9 +327,9 @@ function validate(package::Package)
     return validate(package.manifest)
 end
 
-function read_package(dir::AbstractString)
-    project_file = joinpath(dir, PROJECT_FILE_NAME)
-    manifest_file = joinpath(dir, MANIFEST_FILE_NAME)
+function read_package(path::AbstractString)
+    project_file = get_project(path) 
+    manifest_file = get_manifest(path) 
     manifest = isfile(manifest_file) ? read_manifest(manifest_file) : Manifest()
     return Package(read_project(project_file), manifest, project_file, manifest_file)
 end
