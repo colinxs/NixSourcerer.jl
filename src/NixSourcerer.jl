@@ -29,7 +29,7 @@ const NO_HASH_FETCHERS = (
     "builtins.fetchGit",
 )
 
-const UPDATE_SCRIPT_FILENAME = "update.jl"
+const UPDATE_SCRIPT_FILENAME = "nix_update.jl"
 const FLAKE_FILENAME = "flake.nix"
 const JULIA_PROJECT_FILENAME = "Project.toml"
 const MANIFEST_FILENAME = "NixManifest.nix"

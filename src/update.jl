@@ -1,6 +1,7 @@
-function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
+update(path::AbstractString, args...; kwargs...) = update([ path ], args...; kwargs...)
+
+function update(paths::Vector{<:AbstractString}=[pwd()]; config::AbstractDict=Dict())
     config = parse_config(config)
-    (isfile(path) && config["recursive"]) && nixsourcerer_error("Cannot specify --recursive with a file")
 
     setup(config)
 
@@ -8,92 +9,94 @@ function update(path::AbstractString=pwd(); config::AbstractDict=Dict())
         ENV["JULIA_DEBUG"] = string(@__MODULE__)
     end
 
+    allpaths = String[]
     if config["recursive"]
-        paths = String[]
-        should_update(path) && push!(paths, path)
-        for (root, dirs, files) in walkdir(path)
-            for dir in dirs
-                path = joinpath(root, dir)
-                should_update(path) && push!(paths, path)
+        for path in paths
+            should_update(path) && push!(allpaths, path)
+            if isdir(path)
+                for (root, dirs, files) in walkdir(path)
+                    for dir in dirs
+                        path = joinpath(root, dir)
+                        should_update(path) && push!(allpaths, path)
+                    end
+                end
             end
         end
-
-        # TODO makes debugging failures difficult
-        # Try to catch dependencies between updates
-        # shuffle!(paths)
-
-        print_path = function (path)
-            path = cleanpath(path)
-            s = !config["ignore-script"] && has_update_script(path)
-            j = !s && has_julia_project(path)
-            f = !j && !s && has_flake(path)
-            n = !j && !s && has_project(path)
-            s, j, f, n = map(x -> x ? "+" : "-", (s, j, f, n))
-            str = @sprintf "%-4sS%-3sJ%-3sF%-3sN%-3s%-10s" "" s j f n ""
-            printstyled(str; color=:magenta)
-            return println(path == "." ? ". (cwd)" : path)
-        end
-
-        printstyled("Updating the following paths:\n"; color=:blue, bold=true)
-        printstyled("S = Update (S)cript | "; color=:blue, bold=true)
-        printstyled("J = (J)ulia Project | "; color=:blue, bold=true)
-        printstyled("F = (F)lake | "; color=:blue, bold=true)
-        printstyled("N = (N)ix Project\n\n"; color=:blue, bold=true)
-
-        foreach(print_path, paths)
-        println()
-
-        # DEBUG
-        # Threads.@threads for path in paths 
-        #     _update(path, config)
-        # end
-        # return
-
-        # Since we're updating N paths with M packages each try not to use N*M workers
-        workers = min(length(paths), config["workers"])
-        workers = config["workers"] = round(Int, sqrt(workers), RoundUp)
-
-        if workers == 1
-            foreach(path -> _update(path, config), paths)
-        else
-            asyncmap(path -> _update(path, config), paths; ntasks=workers)
-        end
-
-        len = length(paths)
     else
-        _update(path, config)
-        len = 1
+        append!(allpaths, paths)
+    end
+
+    # TODO makes debugging failures difficult
+    # Try to catch dependencies between updates
+    # shuffle!(allpaths)
+
+    print_path = function (path)
+        path = cleanpath(path)
+        s = !config["ignore-script"] && has_update_script(path)
+        j = !s && has_julia_project(path)
+        f = !j && !s && has_flake(path)
+        n = !j && !s && has_project(path)
+        s, j, f, n = map(x -> x ? "+" : "-", (s, j, f, n))
+        str = @sprintf "%-4sS%-3sJ%-3sF%-3sN%-3s%-10s" "" s j f n ""
+        printstyled(str; color=:magenta)
+        return println(path == "." ? ". (cwd)" : path)
+    end
+
+    printstyled("Updating the following paths:\n"; color=:blue, bold=true)
+    printstyled("S = Update (S)cript | "; color=:blue, bold=true)
+    printstyled("J = (J)ulia Project | "; color=:blue, bold=true)
+    printstyled("F = (F)lake | "; color=:blue, bold=true)
+    printstyled("N = (NVecVe)ix Project\n\n"; color=:blue, bold=true)
+
+    foreach(print_path, allpaths)
+    println()
+
+    # DEBUG
+    # Threads.@threads for path in allpaths 
+    #     _update(path, config)
+    # end
+    # return
+
+    # Since we're updating N paths with M packages each try not to use N*M workers
+    workers = min(length(allpaths), config["workers"])
+    workers = config["workers"] = round(Int, sqrt(workers), RoundUp)
+
+    if workers == 1
+        foreach(path -> _update(path, config), allpaths)
+    else
+        asyncmap(path -> _update(path, config), allpaths; ntasks=workers)
     end
 
     println()
-    printstyled("Done! Congrats on updating $(len) package(s):\n"; color=:blue, bold=true)
+    printstyled("Done! Congrats on updating $(length(allpaths)) package(s):\n"; color=:blue, bold=true)
 
     return nothing
 end
 
 function _update(path, config)
-    cpath = cleanpath(path)
-    printstyled("Updating $cpath\n"; color=:yellow, bold=true)
+    dryrun = config["dry-run"]
+
+    printstyled("Updating $(cleanpath(path))\n"; color=:yellow, bold=true)
     if has_update_script(path)
-        run_julia_script(path)
+        dryrun || run_julia_script(path)
         printstyled(
-            "Updated using script at $cpath. Skipped updating NixManifest.toml/$(FLAKE_FILENAME)/Manifest.toml.\n";
+            "Updated using script at $(cleanpath(get_update_script(path))). Skipped NixManifest.toml/$(FLAKE_FILENAME)/Manifest.toml.\n";
             color=:green,
             bold=true,
         )
         return path
     else
+        if has_project(path)
+            dryrun || update_package(path; config)
+            printstyled("Updated NixManifest.toml at $(cleanpath(get_project(path)))\n"; color=:green, bold=true)
+        end
         if has_flake(path)
-            update_flake(path)
-            printstyled("Updated flake at $cpath\n"; color=:green, bold=true)
+            dryrun || update_flake(path)
+            printstyled("Updated flake at $(cleanpath(get_flake(path)))\n"; color=:green, bold=true)
         end
         if has_julia_project(path)
-            update_julia_project(path)
-            printstyled("Updated Julia project at $cpath\n"; color=:green, bold=true)
-        end
-        if has_project(path)
-            update_package(path; config)
-            printstyled("Updated NixManifest.toml at $cpath\n"; color=:green, bold=true)
+            dryrun || update_julia_project(path)
+            printstyled("Updated Julia project at $(cleanpath(get_julia_project(path)))\n"; color=:green, bold=true)
         end
         return path
     end
@@ -101,15 +104,14 @@ function _update(path, config)
     return nothing
 end
 
-
 function setup(config)
     # We don't want overlays or anything else as it breaks nix-prefetch
-    nixpkgs = strip(run_suppress(`nix eval '(<nixpkgs>)'`, out=true))
+    nixpkgs = strip(run_suppress(`nix eval '(<nixpkgs>)'`; out=true))
     isdir(nixpkgs) || nixsourcerer_error("Could not locate <nixpkgs> in NIX_PATH")
     ENV["NIX_PATH"] = "nixpkgs=$(nixpkgs)"
-    
+
     # We only want to update the registry once per session
-    if ! config["no-update-julia-registries"]
+    if !config["no-update-julia-registries"]
         run_suppress(`julia --startup-file=no --history-file=no -e 'using Pkg; Pkg.Registry.update()'`)
         # Pkg.Registry.update()
     end
@@ -117,7 +119,7 @@ function setup(config)
     return nothing
 end
 
-should_update(path) = has_update_script(path) || has_project(path) || has_flake(path)
+should_update(path) = has_update_script(path) || has_project(path) || has_flake(path) || has_julia_project(path)
 
 has_file(file_or_dir, filename) = isfile(get_file(file_or_dir, filename))
 function get_file(file_or_dir, filename)
@@ -126,20 +128,21 @@ function get_file(file_or_dir, filename)
 end
 
 get_update_script(path) = get_file(path, UPDATE_SCRIPT_FILENAME)
-has_update_script(path) = has_file(path, UPDATE_SCRIPT_FILENAME) 
+has_update_script(path) = has_file(path, UPDATE_SCRIPT_FILENAME)
 
 get_flake(path) = get_file(path, FLAKE_FILENAME)
-has_flake(path) = has_file(path, FLAKE_FILENAME) 
+has_flake(path) = has_file(path, FLAKE_FILENAME)
 
 get_julia_project(path) = get_file(path, JULIA_PROJECT_FILENAME)
-has_julia_project(path) = has_file(path, JULIA_PROJECT_FILENAME) 
+has_julia_project(path) = has_file(path, JULIA_PROJECT_FILENAME)
 
 get_project(path) = get_file(path, PROJECT_FILENAME)
 has_project(path) = has_file(path, PROJECT_FILENAME)
 
-get_manifest(path) = get_file(isfile(path) && basename(path) == PROJECT_FILENAME ? dirname(path) : path, MANIFEST_FILENAME)
-has_manifest(path) = has_file(isfile(path) && basename(path) == PROJECT_FILENAME ? dirname(path) : path, MANIFEST_FILENAME)
-
+get_manifest(path) =
+    get_file(isfile(path) && basename(path) == PROJECT_FILENAME ? dirname(path) : path, MANIFEST_FILENAME)
+has_manifest(path) =
+    has_file(isfile(path) && basename(path) == PROJECT_FILENAME ? dirname(path) : path, MANIFEST_FILENAME)
 
 function update_flake(path)
     path = dirname(get_flake(path))
@@ -188,7 +191,7 @@ function update_package(path::AbstractString=pwd(); config::AbstractDict=Dict())
 end
 
 function update!(package::Package, name::AbstractString)
-    cpath = cleanpath(dirname(package.project_file))
+    path = cleanpath(dirname(package.project_file))
     try
         project_spec = package.project.specs[name]
         manifest_source = HANDLERS[project_spec["type"]](name, project_spec)
@@ -197,9 +200,9 @@ function update!(package::Package, name::AbstractString)
 
         package.manifest.sources[name] = manifest_source
 
-        printstyled("    Updated package $name from $cpath\n"; color=:green)
+        printstyled("    Updated package $name from $path\n"; color=:green)
     catch e
-        nixsourcerer_error("Could not update source $name from $cpath")
+        nixsourcerer_error("Could not update source $name from $path")
         rethrow()
     end
     return package

@@ -158,7 +158,7 @@ end
 
 function cleanpath(path::String)
     cwd = pwd()
-    return issubpath(path, cwd) ? relpath(path, cwd) : abspath(path)
+    return issubpath(path, cwd) ? joinpath(".", relpath(path, cwd)) : abspath(path)
 end
 
 subset(d::AbstractDict, keys...) = Dict{String,Any}(k => d[k] for k in keys if haskey(d, k))
@@ -178,6 +178,7 @@ function parse_config(config)
     p["recursive"]     = get(p, "recursive", false)
     p["ignore-script"] = get(p, "ignore-script", false)
     p["run-test"]      = get(p, "run-test", false)
+    p["dry-run"]       = get(p, "dry-run", false)
     max_workers        = sum(l -> match(r"^nixbld[0-9]+:", l) !== nothing, readlines(`getent passwd`))
     p["workers"]       = max(1, min(max_workers, get(p, "workers", 1)))
     p["no-update-julia-registries"] = get(p, "no-update-julia-registries", false)
@@ -185,9 +186,10 @@ function parse_config(config)
 end
 
 function validate_config(config::AbstractDict)
-    if get(config, "recursive", true) && haskey(config, "names")
-        nixsourcerer_error("Cannot specify 'recursive' and 'names' at the same time")
-    end
+    # TODO does this make sense?
+    # if get(config, "recursive", true) && haskey(config, "names")
+    #     nixsourcerer_error("Cannot specify 'recursive' and 'names' at the same time")
+    # end
 end
 
 prefix_name(name) = "source-" * name

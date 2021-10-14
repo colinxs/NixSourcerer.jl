@@ -4,11 +4,13 @@ function parse_commandline()
     s = ArgParseSettings()
 
     @add_arg_table! s begin
-        "path"
+        "paths"
         help = "Environment to update"
         required = false
         arg_type = String
-        default = pwd()
+        action = :store_arg
+        nargs = '*'
+        default = [ pwd() ]
         "-n", "--names"
         help = "Source names to update in `path`"
         required = false
@@ -32,6 +34,9 @@ function parse_commandline()
         "--run-test"
         help = "Whether to run tests instead of update."
         action = :store_true
+        "--dry-run"
+        help = "Show what would be updated"
+        action = :store_true
         "--verbose"
         help = "Enable debug output"
         action = :store_true
@@ -42,13 +47,13 @@ end
 
 function main()
     config = parse_commandline()
-    path = config["path"]
-    delete!(config, "path")
+    paths = config["paths"]
+    delete!(config, "paths")
     isempty(config["names"]) && delete!(config, "names")
     if get(config, "run-test", false)
-        test(path; config)
+        test(paths; config)
     else
-        update(path; config)
+        update(paths; config)
     end
     return nothing
 end

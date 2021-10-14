@@ -44,7 +44,7 @@ jobs:
       - name: Update
         run: |
           nix --version
-          nix run .#nix-sourcerer -- --recursive --workers 4
+          nix run .#nix-sourcerer -- --workers 4 --verbose
         env:
           JULIA_DEBUG: NixSourcerer
 
@@ -64,4 +64,4 @@ jobs:
           delete-branch: true
       
       - name: GC Store
-        run: nix store gc
+        run: nix store gcNixSourcerer.parse_crate_version("lscolors", "stable")
