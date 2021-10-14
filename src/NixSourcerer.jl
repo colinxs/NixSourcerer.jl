@@ -34,6 +34,7 @@ const FLAKE_FILENAME = "flake.nix"
 const JULIA_PROJECT_FILENAME = "Project.toml"
 const MANIFEST_FILENAME = "NixManifest.nix"
 const PROJECT_FILENAME = "NixProject.toml"
+const PAD_WIDTH = 4
 
 
 include("Nix.jl")

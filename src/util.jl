@@ -56,39 +56,6 @@ function nixpkgs(args::AbstractDict=Dict())
     return "(import (import $(DEFAULT_NIX)).inputs.nixpkgs $(Nix.print(args)))"
 end
 
-function run_julia_script(path::String)
-    path = get_update_script(path)
-    shell_file = joinpath(dirname(path), "shell.nix")
-    flake_file = joinpath(dirname(path), "flake.nix")
-
-    preamble = """
-               using Pkg
-               Pkg.UPDATED_REGISTRY_THIS_SESSION[] = true
-               Pkg.instantiate(update_registry=false)
-               include("$path")
-               """
-    jlcmd = [
-        "julia",
-        "-e",
-    ]
-
-    if isfile(shell_file)
-        push!(jlcmd, "'$preamble'")
-        cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"`
-    elseif isfile(flake_file)
-        push!(jlcmd, "'$preamble'")
-        cmd = `nixUnstable develop $(dirname(flake_file)) -c julia -e $preamble` 
-    else
-        push!(jlcmd, "$preamble")
-        cmd = `$jlcmd`
-    end
-    env = copy(ENV)
-    env["JULIA_PROJECT"] = dirname(path)
-    # TODO run_suppress?
-    run(setenv(cmd, env, dir=dirname(path)))
-    return nothing
-end
-
 function merge_recursively!(a::AbstractDict, b::AbstractDict)
     for (k, v) in b
         if v isa AbstractDict
@@ -192,6 +159,8 @@ function validate_config(config::AbstractDict)
     # end
 end
 
+default_config() = parse_config(Dict())
+
 prefix_name(name) = "source-" * name
 
 function replace_variables(s::String, vars::Dict)
@@ -205,4 +174,31 @@ end
 function tryparse_version(ver)
     parsed = tryparse(VersionNumber, ver)
     return parsed === nothing ? ver : string(parsed)
+end
+
+function run_jobs(jobs; workers=1)
+    if workers == 1
+        foreach(job -> job(), jobs) 
+    else
+        asyncmap(job -> job(), jobs; ntasks=workers)
+    end
+    return nothing
+end
+
+printstyledln(io::IO, args...; kwargs...) = printstyled(io, args..., '\n'; kwargs...)
+printstyledln(args...; kwargs...) = printstyledln(stdout, args...; kwargs...)
+
+indented_printstyled(args...; kwargs...) = indented_printstyled(stdout, args...; kwargs...)
+function indented_printstyled(io::IO, args...; kwargs...)
+    pad = repeat(' ', get(io, :indent, 0))
+    printstyled(io, pad, args...; kwargs...)
+end
+
+indented_printstyledln(args...; kwargs...) = indented_printstyledln(stdout, args...; kwargs...)
+indented_printstyledln(io::IO, args...; kwargs...) = indented_printstyled(io, args..., '\n'; kwargs...)
+
+function Base.setindex(x::AbstractDict, v, k)
+    y = copy(x)
+    y[k] = v
+    return y
 end
