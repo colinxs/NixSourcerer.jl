@@ -195,7 +195,12 @@ prefix_name(name) = "source-" * name
 function replace_variables(s::String, vars::Dict)
     for (k, v) in vars
         p = "@{{ $k }}"
-        s = replace(s, p => v)
+        s = replace(s, p => v       )
     end
     return s
+end
+
+function tryparse_version(ver)
+    parsed = tryparse(VersionNumber, ver)
+    return parsed === nothing ? ver : string(parsed)
 end

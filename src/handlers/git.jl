@@ -15,7 +15,7 @@ function git_handler(name, spec)
     submodule = get(spec, "submodule", false)
     variables = get(spec, "variables", Dict())
     url = replace_variables(spec["url"], variables) 
-    meta = Dict("variables" => variables)
+    meta = Dict{String,Any}("variables" => variables)
     extraArgs = get(spec, "extraArgs", Dict())
     
     if haskey(spec, "rev")
@@ -32,13 +32,17 @@ function git_handler(name, spec)
     elseif haskey(spec, "tag")
         ref = "refs/tags/$(spec["tag"])"
         rev = git_ref2rev(url, ref)
-        ver = splitpath(spec["tag"])[end]
+        ver = tryparse_version(splitpath(spec["tag"])[end])
+        meta["tag"] = spec["tag"]
     elseif haskey(spec, "latest_semver_tag")
-        ref, rev, ver = git_latest_semver_tag(url)
-        ver = string(ver)
+        ref, rev, tag, ver = git_latest_semver_tag(url)
+        meta["tag"] = tag
     else
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
+
+    meta["ref"] = ref
+    meta["rev"] = rev
 
     fetcher_args = Dict{Symbol,Any}(Symbol(k) => v for (k,v) in extraArgs)
     # fetcher_args[:name] = get(spec, "name", git_short_rev(rev))
@@ -72,7 +76,7 @@ function git_ref2rev(url::AbstractString, ref::AbstractString)
     @assert length(columns) == 2
     rev = columns[1]
 
-    @assert match(r"\b([a-f0-9]{40})\b", rev) != nothing
+    @assert match(r"\b([a-f0-9]{40})\b", rev) !== nothing
     return rev
 end
 #  git -c 'versionsort.suffix=-' \
@@ -98,13 +102,18 @@ function git_latest_semver_tag(url::AbstractString; prefix::AbstractString = "")
     parsed = map(lines) do l
         rev, ref = split(strip(l))
         m = match(r"^refs/tags/(.*)", ref)
-        m === nothing ? (rev, ref, nothing) : (rev, ref, tryparse(VersionNumber, only(m.captures)))
+        if m === nothing 
+            return (rev, ref, nothing, nothing) 
+        else
+            tag = only(m.captures)
+            return (rev, ref, tag, tryparse(VersionNumber, tag))
+        end
     end
-    valid = filter(parsed) do (rev, ref, v)
+    valid = filter(parsed) do (rev, ref, tag, v)
         v !== nothing && v.build === () && v.prerelease === ()
     end
     if length(valid) > 0
-        sort!(valid, by = x -> x[3])
+        sort!(valid, by = x -> x[end])
         return valid[end]
     else
         return nothing

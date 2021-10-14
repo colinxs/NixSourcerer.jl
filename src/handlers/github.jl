@@ -37,16 +37,18 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         ver = spec["branch"]
     elseif haskey(spec, "tag")
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
-        ver = splitpath(spec["tag"])[end]
+        ver = tryparse_version(splitpath(spec["tag"])[end])
     elseif haskey(spec, "latest_semver_tag")
-        rev, ref, ver = git_latest_semver_tag(url)
-        ver = string(ver)
+        rev, ref, tag, ver = git_latest_semver_tag(url)
+        meta["tag"] = tag
     elseif haskey(spec, "release")
         tag, rev, ver, assets = github_get_release(owner, repo, spec["release"], get(spec, "assets", false), builtin, extraArgs)
+        meta["tag"] = tag
         meta["assets"] = assets
     else
         nixsourcerer_error("Unknown spec: ", string(spec))
     end
+    meta["rev"] = rev
 
     source_name = sanitize_name("$(repo)-$(ver)")
     if submodule
@@ -83,7 +85,7 @@ function github_get_release(owner, repo, release, assets, builtin, extraArgs)
 
     tag = rel["tag_name"]
     rev = github_get_rev_sha_from_ref(owner, repo, "tags/$tag")
-    ver = splitpath(tag)[end]
+    ver = tryparse_version(splitpath(tag)[end])
 
     if assets isa Bool
         assets = assets ? map(a -> a["name"], rel["assets"]) : []
