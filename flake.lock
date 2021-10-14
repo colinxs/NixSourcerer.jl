@@ -3,6 +3,7 @@
     "arion": {
       "inputs": {
         "nixpkgs": [
+          "nix-home",
           "nixpkgs"
         ]
       },
@@ -117,6 +118,7 @@
     "home-manager": {
       "inputs": {
         "nixpkgs": [
+          "nix-home",
           "nixpkgs"
         ]
       },
@@ -160,10 +162,12 @@
     "neovim-nightly-overlay": {
       "inputs": {
         "flake-compat": [
+          "nix-home",
           "flake-compat"
         ],
         "neovim-flake": "neovim-flake",
         "nixpkgs": [
+          "nix-home",
           "nixpkgs"
         ]
       },
@@ -189,31 +193,39 @@
         "home-manager": "home-manager",
         "neovim-nightly-overlay": "neovim-nightly-overlay",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-fork": "nixpkgs-fork"
+        "nixpkgs-fork": "nixpkgs-fork",
+        "nixpkgs-stable": "nixpkgs-stable"
       },
       "locked": {
-        "narHash": "sha256-psopRWnNgiN4NKHu/VwRpQiU2clRHqj3zd1SHPjKSD4=",
-        "path": "/home/colinxs/nix-home",
-        "type": "path"
+        "dir": "nix-home",
+        "lastModified": 1634196506,
+        "narHash": "sha256-tTctTXaOpZ0GINOt//JvLt4eRq4TUd16WfAilKgs0JU=",
+        "ref": "master",
+        "rev": "31a7129656584a5cbd39f70ecd6badd96d0c32f2",
+        "revCount": 556,
+        "type": "git",
+        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
       },
       "original": {
-        "path": "/home/colinxs/nix-home",
-        "type": "path"
+        "dir": "nix-home",
+        "type": "git",
+        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1627391865,
-        "narHash": "sha256-tPoWBO9Nzu3wuX37WcnctzL6LoDCErJLnfLGqqmXCm4=",
-        "owner": "NixOS",
+        "lastModified": 1633971123,
+        "narHash": "sha256-WmI4NbH1IPGFWVkuBkKoYgOnxgwSfWDgdZplJlQ93vA=",
+        "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "8ecc61c91a596df7d3293603a9c2384190c1b89a",
+        "rev": "e4ef597edfd8a0ba5f12362932fc9b1dd01a0aef",
         "type": "github"
       },
       "original": {
-        "id": "nixpkgs",
+        "owner": "nixos",
         "ref": "nixos-unstable",
-        "type": "indirect"
+        "repo": "nixpkgs",
+        "type": "github"
       }
     },
     "nixpkgs-fork": {
@@ -228,6 +240,22 @@
       "original": {
         "owner": "colinxs",
         "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-stable": {
+      "locked": {
+        "lastModified": 1634115022,
+        "narHash": "sha256-K9DZMQ47VRrg9gtTPwex5p0E8LnwM/dDkNe7AQW0qj0=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "564cb4d81d4f734dd068684adec5a60077397fe9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-21.05",
         "repo": "nixpkgs",
         "type": "github"
       }
