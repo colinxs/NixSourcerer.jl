@@ -12,15 +12,15 @@ function update(paths::Vector{<:AbstractString}=[pwd()]; config::AbstractDict=Di
     allpaths = String[]
     if config["recursive"]
         for path in paths
-            should_update(path) && push!(allpaths, path)
             if isdir(path)
-                for (root, dirs, files) in walkdir(path)
+                for (root, dirs, files) in walkdir(path; topdown=false)
                     for dir in dirs
                         path = joinpath(root, dir)
                         should_update(path) && push!(allpaths, path)
                     end
                 end
             end
+            should_update(path) && push!(allpaths, path)
         end
     else
         append!(allpaths, paths)
