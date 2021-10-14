@@ -198,18 +198,18 @@
       },
       "locked": {
         "dir": "nix-home",
-        "lastModified": 1634196506,
-        "narHash": "sha256-tTctTXaOpZ0GINOt//JvLt4eRq4TUd16WfAilKgs0JU=",
-        "ref": "master",
-        "rev": "31a7129656584a5cbd39f70ecd6badd96d0c32f2",
-        "revCount": 556,
-        "type": "git",
-        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
+        "lastModified": 1634196840,
+        "narHash": "sha256-avaIveVkTZZr0Uj+RZNbAQY0eA0o+f6EJLUpYZcWU4c=",
+        "owner": "colinxs",
+        "repo": "home",
+        "rev": "b603ec3b2dea4b2922b0c9e1c5b3d4219a1143a5",
+        "type": "github"
       },
       "original": {
         "dir": "nix-home",
-        "type": "git",
-        "url": "ssh://git@github.com/colinxs/home?dir=nix-home"
+        "owner": "colinxs",
+        "repo": "home",
+        "type": "github"
       }
     },
     "nixpkgs": {

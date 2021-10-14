@@ -4,7 +4,7 @@ include("preamble.jl")
 
 @testset "crate" begin
     pname = "lscolors"
-    version = "0.7.1"
+    version = "0.8.0"
     url = "https://crates.io/api/v1/crates/$(pname)/$(version)/download#crate.tar.gz"
     sha256 = with_unpack(nix_dir_sha256, download(url); strip=true)
     name = sanitize_name("$(pname)-$(version)")
