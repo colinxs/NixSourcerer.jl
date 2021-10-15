@@ -48,7 +48,7 @@ jobs:
       - name: Update
         run: |
           nix --version
-          nix run .#nix-sourcerer -- --workers 4 --verbose
+          nix run .#nix-sourcerer -- --workers 4 --verbose --recursive
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3.10.1
