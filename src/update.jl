@@ -51,12 +51,6 @@ function update(paths::Vector{<:AbstractString}=[pwd()]; config::AbstractDict=de
     foreach(print_path, allpaths)
     println()
 
-    # DEBUG
-    # Threads.@threads for path in allpaths 
-    #     _update(path, config)
-    # end
-    # return
-    
     jobs = []
     for path in allpaths
         append!(jobs, _update(path; config, io))
@@ -65,19 +59,7 @@ function update(paths::Vector{<:AbstractString}=[pwd()]; config::AbstractDict=de
     # Since we're updating N paths with M packages each try not to use N*M workers
     # workers = min(length(allpaths), config["workers"])
     # workers = config["workers"] = round(Int, sqrt(workers), RoundUp)
-    workers = config["workers"]
-
-    if workers == 1
-        foreach(job -> job(), jobs)
-    else
-        run_jobs(jobs, workers=config["workers"])
-        # asyncmap(job -> job(), jobs; ntasks=workers)
-        # Base.Experimental.@sync begin
-        #     for job in jobs
-        #         @async job()
-        #     end
-        # end
-    end
+    run_jobs(jobs, workers=config["workers"])
 
     println()
     printstyledln(io, "Done! Congrats on updating $(length(allpaths)) package(s):"; color=:blue, bold=true)
@@ -143,12 +125,14 @@ function _run_update_script(path::String; config, io)
                 "-e",
             ]
 
+            args = [ "--option max-jobs 1", "--option cores 0" ]
+            !config["verbose"] && push!(args, "--quiet")
             if isfile(shell_file)
                 push!(jlcmd, "'$preamble'")
                 cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"`
             elseif isfile(flake_file)
                 push!(jlcmd, "'$preamble'")
-                cmd = `nixUnstable develop $(dirname(flake_file)) -c julia -e $preamble` 
+                cmd = `nixUnstable develop $(dirname(flake_file)) -c julia -e $preamble`
             else
                 push!(jlcmd, "$preamble")
                 cmd = `$jlcmd`

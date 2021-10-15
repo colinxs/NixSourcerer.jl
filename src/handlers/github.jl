@@ -37,9 +37,10 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         ver = spec["branch"]
     elseif haskey(spec, "tag")
         rev = github_get_rev_sha_from_ref(owner, repo, "tags/$(spec["tag"])")
-        ver = tryparse_version(splitpath(spec["tag"])[end])
+        ver = string(tryparse_version(splitpath(spec["tag"])[end]))
     elseif haskey(spec, "latest_semver_tag")
         rev, ref, tag, ver = git_latest_semver_tag(url)
+        ver = string(ver)
         meta["tag"] = tag
     elseif haskey(spec, "release")
         tag, rev, ver, assets = github_get_release(owner, repo, spec["release"], get(spec, "assets", false), builtin, extraArgs)
@@ -53,7 +54,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     source_name = sanitize_name("$(repo)-$(ver)")
     if submodule
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
-        # new_spec["name"] = source_name 
+        new_spec["name"] = source_name 
         new_spec["rev"] = rev
         new_spec["url"] = url
         new_spec["extraArgs"] = extraArgs
@@ -64,7 +65,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
         new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
         new_spec["extraArgs"] = extraArgs
-        # new_spec["name"] = source_name 
+        new_spec["name"] = source_name 
         source = archive_handler(name, new_spec)
         return Source(;
             pname=name, version=ver, fetcher_name=source.fetcher_name, fetcher_args=source.fetcher_args, meta

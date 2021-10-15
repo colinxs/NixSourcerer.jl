@@ -181,6 +181,9 @@ function run_jobs(jobs; workers=1)
         foreach(job -> job(), jobs) 
     else
         asyncmap(job -> job(), jobs; ntasks=workers)
+        # Threads.@threads for job in jobs
+        #     job()
+        # end
     end
     return nothing
 end
