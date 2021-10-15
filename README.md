@@ -9,3 +9,4 @@ p.specs["rnix-lsp"]["meta"]["cargoSha256"] = sha
 - change update script from update.jl to nix-update.jl
 - run_supress: replace out=true with out=String for type to parse output
 - nix-prefetch --check-store? Only when downloading?
+- TODO(urgent) naming for sources? parallel build?
