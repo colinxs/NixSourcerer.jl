@@ -95,7 +95,8 @@ function _update(path; config, io)
         has_flake(path)  && push!(jobs, _update_flake(path; config, io))
         has_project(path) && append!(jobs, _update_package(path; config, io))
     end
-    push!(jobs, () -> printstyledln(io, "Finished updating $(cleanpath(path))"; color=:yellow, bold=true))
+    # TODO gets printed early because async
+    # push!(jobs, () -> printstyledln(io, "Finished updating $(cleanpath(path))"; color=:yellow, bold=true))
     return jobs 
 end
 
