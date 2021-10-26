@@ -31,6 +31,9 @@ jobs:
             cores = 0
             max-jobs = auto
             experimental-features = nix-command flakes
+            extra-sandbox-paths = /var/cache/ccache=/var/cache/ccache
+            log-lines = 200
+            http-connections = 100
             access-tokens = github.com=${{ secrets.PAT }}
 
       - uses: cachix/cachix-action@v10
