@@ -36,6 +36,10 @@ jobs:
             http-connections = 100
             access-tokens = github.com=${{ secrets.PAT }}
 
+      - name: Setup CCache
+        run: |
+          sudo mkdir -m0770 /var/cache/ccache
+          sudo chown root:nixbld /var/cache/ccache
 
       - uses: cachix/cachix-action@v10
         with:
