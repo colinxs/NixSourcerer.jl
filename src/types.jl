@@ -10,14 +10,13 @@ nixsourcerer_error(msg::String...) = throw(NixSourcererError(join(msg)))
 
 Base.showerror(io::IO, err::NixSourcererError) = print(io, err.msg)
 
-
 ####
 #### Fetcher 
 ####
 
 # TODO merge Fetcher and Source?
 
-mutable struct Fetcher 
+mutable struct Fetcher
     name::String
     args::Dict{Symbol,Any}
 end
@@ -41,7 +40,6 @@ function Nix.print(io::IO, fetcher::Fetcher)
     return write(io, "; }")
 end
 
-
 ####
 #### Source
 ####
@@ -62,19 +60,33 @@ mutable struct Source
     fetcher_name::String
     fetcher_args::Dict{Symbol,Any}
     meta::Dict{String,Any}
+    outPath::Union{String,Nothing}
+    function Source(
+        pname::AbstractString,
+        version::Union{<:AbstractString,VersionNumber},
+        name::AbstractString,
+        fetcher_name::AbstractString,
+        fetcher_args::AbstractDict,
+        meta::AbstractDict,
+        outPath::Union{<:AbstractString,Nothing},
+    )
+        return new(
+            strip(pname),
+            strip(string(version)),
+            strip(name),
+            strip(fetcher_name),
+            fetcher_args,
+            meta,
+            outPath === nothing ? outPath : strip(outPath),
+        )
+    end
+
 end
 
 function Source(;
-    pname,
-    version,
-    name="$(pname)-$(version)",
-    fetcher_name,
-    fetcher_args,
-    meta=Dict{String,Any}(),
+    pname, version, name="$(pname)-$(version)", fetcher_name, fetcher_args, meta=Dict{String,Any}(), outPath=nothing
 )
-    return Source(
-        strip(pname), strip(version), strip(name), strip(fetcher_name), fetcher_args, meta
-    )
+    return Source(pname, version, name, fetcher_name, fetcher_args, meta, outPath)
 end
 
 function Nix.print(io::IO, source::Source)
@@ -106,7 +118,6 @@ end
 
 abstract type Schema end
 
-
 struct SimpleSchema <: Schema
     key::String
     type::Type
@@ -127,7 +138,6 @@ function validate(schema::SimpleSchema, spec)
         nixsourcerer_error("Must specify \"$key\"")
     end
 end
-
 
 struct ExclusiveSchema{N} <: Schema
     keys::NTuple{N,String}
@@ -150,7 +160,6 @@ function validate(schema::ExclusiveSchema, spec)
         nixsourcerer_error("Must specify exactly one of \"$(schema.keys)\".")
     end
 end
-
 
 struct DependentSchema{N} <: Schema
     ikey::String
@@ -177,7 +186,6 @@ function validate(schema::DependentSchema, spec)
     end
 end
 
-
 struct SchemaSet{N} <: Schema
     schemas::NTuple{N,Schema}
 end
@@ -187,9 +195,7 @@ SchemaSet(schemas::Schema...) = SchemaSet(schemas)
 Base.keys(schema::SchemaSet) = foldl((a, b) -> (a..., keys(b)...), schema.schemas; init=())
 
 const DEFAULT_SCHEMA_SET = SchemaSet(
-    SimpleSchema("type", String, true),
-    SimpleSchema("builtin", Bool, false),
-    SimpleSchema("meta", Dict, false),
+    SimpleSchema("type", String, true), SimpleSchema("builtin", Bool, false), SimpleSchema("meta", Dict, false)
 )
 
 function validate(set::SchemaSet, spec)
@@ -251,7 +257,6 @@ function write_project(project::Project, project_file::AbstractString=PROJECT_FI
     end
 end
 
-
 ####
 #### Manifest
 ####
@@ -266,30 +271,44 @@ function validate(manifest::Manifest) end
 
 function read_manifest(manifest_file::AbstractString=MANIFEST_FILENAME)
     manifest_file = abspath(manifest_file)
-    fields = ["pname", "version", "name", "fetcherName", "fetcherArgs", "meta"]
+    attrs = ["pname", "version", "name", "fetcherName", "fetcherArgs", "meta", "outPath"]
     expr = """
-        with builtins; 
+        with builtins;
         let
-            fields = [$(join(map(s -> "\"$(s)\"", fields), " "))];
-            getFields = _: v: foldl' (a: b: a // b) {} (map (n: { "\${n}" = v."\${n}"; }) fields);
+        pkgs = import <nixpkgs> { };
+        inherit (pkgs) lib;
+        attrs = [$(join(map(s -> "\"$(s)\"", attrs), " "))];
+        manifest = import $(manifest_file) { inherit pkgs; };
         in
-        mapAttrs getFields (import "$(manifest_file)" {})
+        lib.mapAttrs
+            (pkgname: pkg:
+            builtins.listToAttrs (map
+                (attr:
+                    let value = pkg."\${attr}";
+                    in
+                    if attr == "outPath" then
+                        { name = "_outPath"; value = builtins.toString value; }
+                    else
+                        { name = attr; inherit value; } 
+                )
+                attrs)
+            )
+            manifest
     """
-    
-    cmd = `nix eval --json "($expr)"`
-    raw = strip(run_suppress(cmd, out=true))
-    json = JSON.parse(raw)
+    json = JSON.parse(strip(run_suppress(`nix eval --json "($expr)"`; out=true)))
 
     manifest = Manifest()
     for (name, source) in json
         args = []
-        for k in fields
+        for k in attrs
             if k == "fetcherArgs"
                 fetcher_args = Dict{Symbol,Any}()
                 for (k, v) in source[k]
                     fetcher_args[Symbol(k)] = v
                 end
                 push!(args, fetcher_args)
+            elseif k == "outPath"
+                push!(args, source["_outPath"])
             else
                 push!(args, source[k])
             end
@@ -300,9 +319,7 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILENAME)
     return manifest
 end
 
-function write_manifest(
-    manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILENAME
-)
+function write_manifest(manifest::Manifest, manifest_file::AbstractString=MANIFEST_FILENAME)
     io = IOBuffer(; append=true)
     write(io, "{ pkgs ? import <nixpkgs> {} }:")
     Nix.print(io, manifest.sources; sort=true)
@@ -328,8 +345,8 @@ function validate(package::Package)
 end
 
 function read_package(path::AbstractString)
-    project_file = get_project(path) 
-    manifest_file = get_manifest(path) 
+    project_file = get_project(path)
+    manifest_file = get_manifest(path)
     manifest = isfile(manifest_file) ? read_manifest(manifest_file) : Manifest()
     return Package(read_project(project_file), manifest, project_file, manifest_file)
 end

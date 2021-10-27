@@ -205,3 +205,26 @@ function Base.setindex(x::AbstractDict, v, k)
     y[k] = v
     return y
 end
+
+function copy_into(src, dst; force=false)
+    isdir(dst) || nixsourcerer_error("dst must be a directory")
+    if isfile(src)
+        cp(src, joinpath(dst, basename(src)))
+    else
+        for (root, dirs, files) in walkdir(src)
+            for dir in dirs
+                srcdir = joinpath(root, dir)
+                reldir = relpath(srcdir, src)
+                dstdir = joinpath(dst, reldir)
+                mkpath(dstdir)
+            end
+            for file in files
+                srcfile = joinpath(root, file)
+                relfile = relpath(srcfile, src)
+                dstfile = joinpath(dst, relfile)
+                cp(srcfile, dstfile; force)
+            end
+        end
+    end
+end
+
