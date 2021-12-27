@@ -16,7 +16,16 @@ function file_handler(name::AbstractString, spec::AbstractDict)
     fetcher_args = Dict{Symbol,Any}(Symbol(k) => v for (k,v) in extraArgs)
     fetcher_args[:name] = sanitize_name(get(spec, "name", url_name(spec["url"])))
     fetcher_args[:url] = url 
-    fetcher_args[:sha256] = sha256 = get_sha256(fetcher_name, fetcher_args)
+    
+    hash = get_sha256(fetcher_name, fetcher_args)
+    version = version_string(hash) 
 
-    return Source(; pname=name, version=sha256, fetcher_name, fetcher_args, meta)
+    if builtin
+        fetcher_args[:sha256] = string(hash, encoding=Base32Nix())
+    else
+        fetcher_args[:hash] = string(hash) 
+    end
+
+
+    return Source(; pname=name, version, fetcher_name, fetcher_args, meta)
 end

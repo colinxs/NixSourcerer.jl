@@ -1,10 +1,15 @@
-function get_sha256(expr::String, args::Vector{String}=["--hash-algo", "sha256"])
+function get_sha256(args::Vector{String}=String[])
+    args = append!(["--hash-algo", "sha256", "--output", "raw"], args)
+    hash = strip(run_suppress(`nix-prefetch $args`, out=true))
+    return Hash(strip(run_suppress(`nix hash to-sri --type sha256 $hash`, out=true)))
+end
+
+function get_sha256_expr(expr::String, args::Vector{String}=String[]) 
     expr = """
            with (import <nixpkgs> { });
            $expr
            """
-    cmd = `nix-prefetch $expr --output raw $args`
-    return check_sha256(strip(run_suppress(cmd; out=true)))
+    return get_sha256(append!([expr], args)) 
 end
 
 function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,<:Any})
@@ -18,10 +23,10 @@ function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,<:Any})
             push!(args, "--$(k)")
             push!(args, string(v))
         end
-        return check_sha256(strip(run_suppress(`nix-prefetch $args`; out=true)))
+        return get_sha256(args)
     else
         expr = "$fetcher_name $(Nix.print(fetcher_args))"
-        return get_sha256(expr)
+        return get_sha256_expr(expr) 
     end
 end
 
@@ -37,19 +42,11 @@ function get_yarnsha256(pkg)
     return get_sha256(expr)
 end
 
-function check_sha256(str)
-    # From nix/src/libutil/hash.cc
-    if match(r"^[0123456789abcdfghijklmnpqrsvwxyz]{52}$", str) === nothing
-        error("Invalid Base-32 SHA256: $str")
-    end
-    return str 
-end
-
 # TODO may actually want to use <nixpkgs>
 # Consider doing only if nixpkgs not on NIX_PATH
 function build_source(fetcher_name, fetcher_args)
     expr = "(with $(nixpkgs()); ($fetcher_name $(Nix.print(fetcher_args))).outPath)"
-    return run_suppress(`nix eval $expr`)
+    return run_suppress(`nix eval --expr $expr`)
 end
 
 function nixpkgs(args::AbstractDict=Dict())
@@ -69,14 +66,22 @@ end
 
 git_short_rev(rev) = SubString(rev, 1:7)
 
-# Taken from https://github.com/NixOS/nix/blob/bd6cf25952a42afabea822141798566e0f0583b3/src/libexpr/lexer.l#L91
+# See: https://github.com/NixOS/nix/blob/bd6cf25952a42afabea822141798566e0f0583b3/src/libexpr/lexer.l#L91
+# See: https://github.com/NixOS/nixpkgs/blob/5283247e3327abce1885071e281e615772bceae7/lib/strings.nix
 function sanitize_name(name)
-    valid = r"^[a-zA-Z\_][a-zA-Z0-9\_\'\-]*$"
-    allowed = r"[^a-zA-Z0-9\_\'\-]"
-    name = replace(name, allowed => '_')
-    while match(valid, name) == nothing
-        name = name[2:end]
-    end
+    # Strip all leading "."
+    name = lstrip(name, '.')
+
+    # Replace invalid character ranges with a "-"
+    allowed = r"[^a-zA-Z0-9\+\._\?=-]"
+    name = replace(name, allowed => '_', count=1)
+
+    # Limit to 211 characters (minus 4 chars for ".drv")
+    name = name[begin:min(length(name), 207)]
+
+    # If the result is empty, replace it with "unknown"
+    name = isempty(name) ? "unknown" : name
+
     return name
 end
 

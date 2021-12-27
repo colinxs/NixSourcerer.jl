@@ -9,7 +9,8 @@ include("preamble.jl")
     tag = "v0.2.19"
     git_url = "https://github.com/$(owner)/$(repo).git"
     tarball_url = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
-    sha256 = with_clone_and_checkout(nix_dir_sha256, git_url, rev)
+    hash = with_clone_and_checkout(nix_dir_sha256, git_url, rev)
+    name = git_short_rev(rev)
 
     toml = Dict(
         "test1" => Dict(
@@ -30,19 +31,19 @@ include("preamble.jl")
     truth = Dict(
         "test1.fetcherName" => "pkgs.fetchzip",
         "test1.fetcherArgs.url" => tarball_url,
-        "test1.fetcherArgs.sha256" => sha256,
-        # "test1.fetcherArgs.name" => sanitize_name("$(repo)-$(git_short_rev(rev))"),
+        "test1.fetcherArgs.hash" => string(hash),
+        "test1.fetcherArgs.name" => name, 
 
         "test2.fetcherName" => "builtins.fetchTarball",
         "test2.fetcherArgs.url" => tarball_url,
-        "test2.fetcherArgs.sha256" => sha256,
-        # "test2.fetcherArgs.name" => sanitize_name("$(repo)-$(git_short_rev(rev))"),
+        "test2.fetcherArgs.sha256" => string(hash, encoding=Base32Nix()),
+        "test2.fetcherArgs.name" => name, 
 
         "test3.fetcherName" => "pkgs.fetchgit",
         "test3.fetcherArgs.url" => git_url,
         "test3.fetcherArgs.rev" => rev,
-        "test3.fetcherArgs.sha256" => sha256,
-        # "test3.fetcherArgs.name" => sanitize_name("$(repo)-$(tag)"),
+        "test3.fetcherArgs.hash" => string(hash),
+        "test3.fetcherArgs.name" => name, 
     )
     runtest(toml, truth)
 end

@@ -48,10 +48,7 @@ function git_handler(name, spec)
     fetcher_args[:name] = sanitize_name(get(spec, "name", git_short_rev(rev)))
     fetcher_args[:url] = url 
     fetcher_args[:rev] = rev
-    if builtin && submodule
-        # TODO nix 2.4 fetchGit
-        error("Cannot fetch submodules with builtins.fetchGit (until Nix 2.4)")
-    elseif builtin && !submodule
+    if builtin
         fetcher_name = "builtins.fetchGit"
         fetcher_args[:ref] = ref
         # TODO
@@ -61,7 +58,14 @@ function git_handler(name, spec)
         # TODO fetchgit doesn't have ref option
         fetcher_name = "pkgs.fetchgit"
         fetcher_args[:fetchSubmodules] = submodule
-        fetcher_args[:sha256] = get_sha256(fetcher_name, fetcher_args)
+        
+        hash = get_sha256(fetcher_name, fetcher_args)
+
+        if builtin
+            fetcher_args[:sha256] = string(hash, encoding=Base32Nix())
+        else
+            fetcher_args[:hash] = string(hash) 
+        end
     end
 
     return Source(; pname=name, version=ver, fetcher_name, fetcher_args)

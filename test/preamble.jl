@@ -7,20 +7,21 @@ using Test
 
 using NixSourcerer
 using NixSourcerer: run_suppress, sanitize_name, git_short_rev, url_name
+using NixSourcerer: Base32Nix, SRI, Hash
 
 noall(cmd::Cmd) = pipeline(cmd; stdout=devnull, stderr=devnull)
 
 function nix_file_sha256(path)
-    return strip(run_suppress(`nix-hash --type sha256 --base32 --flat $path`, out=true))
+    return Hash(strip(run_suppress(`nix hash file $path`, out=true)))
 end
 
 function nix_dir_sha256(path)
-    return strip(run_suppress(`nix-hash --type sha256 --base32 $path`, out = true))
+    return Hash(strip(run_suppress(`nix hash path $path`, out = true)))
 end
 
 function nix_eval_source_attr(dir, attr)
-    expr = "( (import $(dir)/NixManifest.nix {}).$(attr) )"
-    return strip(run_suppress(`nix eval --raw $(expr)`, out=true))
+    expr = "(import $(dir)/NixManifest.nix {}).$(attr)"
+    return strip(run_suppress(`nix eval --impure --raw --expr $expr`, out=true))
 end
 
 function compare_source_attr(dir, truth, attr::AbstractString)

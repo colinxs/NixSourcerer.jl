@@ -51,21 +51,21 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     end
     meta["rev"] = rev
 
-    source_name = sanitize_name("$(repo)-$(ver)")
+    source_name = sanitize_name(get(spec, "name", git_short_rev(rev)))
     if submodule
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
         new_spec["name"] = source_name 
-        new_spec["rev"] = rev
         new_spec["url"] = url
+        new_spec["rev"] = rev
         new_spec["extraArgs"] = extraArgs
         source = git_handler(name, new_spec)
         source.version = ver
         return source
     else
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
+        new_spec["name"] = source_name 
         new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
         new_spec["extraArgs"] = extraArgs
-        new_spec["name"] = source_name 
         source = archive_handler(name, new_spec)
         return Source(;
             pname=name, version=ver, fetcher_name=source.fetcher_name, fetcher_args=source.fetcher_args, meta
@@ -78,8 +78,11 @@ function github_get_rev_sha_from_ref(owner, repo, ref)
 end
 
 function github_get_release(owner, repo, release, assets, builtin, extraArgs)
-    if builtin && get(ENV, "GITHUB_TOKEN", nothing) !== nothing
-        nixsourcerer_error("Cannot use builtin fetcher for assets when GITHUB_TOKEN is provided")
+    # if builtin && get(ENV, "GITHUB_TOKEN", nothing) !== nothing
+    #     nixsourcerer_error("Cannot use builtin fetcher for assets when GITHUB_TOKEN is provided")
+    # end
+    if builtin
+        nixsourcerer_error("Cannot use builtin fetcher for GitHub assets")
     end
 
     rel = github_api_get(owner, repo, "releases/$release")
@@ -124,15 +127,17 @@ function github_get_release(owner, repo, release, assets, builtin, extraArgs)
         fetcher_args[:url] = info["browser_download_url"]
         if info["content_type"] in ARCHIVE_MIME_TYPES 
             fetcher_name = "pkgs.fetchzip"
-            try
-                fetcher_args[:sha256] = get_sha256(fetcher_name, fetcher_args)
+            hash = try
+                get_sha256(fetcher_name, fetcher_args)
             catch
                 fetcher_args[:stripRoot] = false
-                fetcher_args[:sha256] = get_sha256(fetcher_name, fetcher_args)
+                get_sha256(fetcher_name, fetcher_args)
             end
+            version = version_string(hash)
+            fetcher_args[:hash] = string(hash) 
         else
             fetcher_name = "pkgs.fetchurl"
-            fetcher_args[:sha256] = get_sha256(fetcher_name, fetcher_args)
+            fetcher_args[:hash] = string(get_sha256(fetcher_name, fetcher_args))
         end
 
         fetcher = Fetcher(fetcher_name, fetcher_args)

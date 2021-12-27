@@ -69,7 +69,8 @@ end
 
 function setup(config)
     # We don't want overlays or anything else as it breaks nix-prefetch
-    nixpkgs = strip(run_suppress(`nix eval '(<nixpkgs>)'`; out=true))
+    # TODO don't use <nixpkgs>?>
+    nixpkgs = strip(run_suppress(`nix eval --impure --expr '<nixpkgs>'`; out=true))
     isdir(nixpkgs) || nixsourcerer_error("Could not locate <nixpkgs> in NIX_PATH")
     ENV["NIX_PATH"] = "nixpkgs=$(nixpkgs)"
 
@@ -133,7 +134,7 @@ function _run_update_script(path::String; config, io)
                 cmd = `nix-shell $shell_file --run "$(join(jlcmd, ' '))"`
             elseif isfile(flake_file)
                 push!(jlcmd, "'$preamble'")
-                cmd = `nixUnstable develop $(dirname(flake_file)) -c julia -e $preamble`
+                cmd = `nix develop $(dirname(flake_file)) -c julia -e $preamble`
             else
                 push!(jlcmd, "$preamble")
                 cmd = `$jlcmd`
@@ -155,7 +156,7 @@ function _update_flake(path; config, io)
         path = dirname(get_flake(path))
         indented_printstyledln(io, "Updating flake at $(cleanpath(get_flake(path)))"; color=:green, bold=true)
         if !config["dry-run"]
-            run_suppress(`nix-shell -p nixUnstable --command "nix flake update $path"`)
+            run_suppress(`nix flake update $path`)
         end
         return nothing
     end

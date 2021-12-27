@@ -295,7 +295,7 @@ function read_manifest(manifest_file::AbstractString=MANIFEST_FILENAME)
             )
             manifest
     """
-    json = JSON.parse(strip(run_suppress(`nix eval --json "($expr)"`; out=true)))
+    json = JSON.parse(strip(run_suppress(`nix eval --json --expr $expr`; out=true)))
 
     manifest = Manifest()
     for (name, source) in json

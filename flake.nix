@@ -34,15 +34,6 @@
           mur = nix-home.legacyPackages."${system}".mur;
           dev = mur.dev;
           julia = mur.julia-bin.latest;
-          nixUnstable = pkgs.runCommand "nixUnstable"
-            {
-              buildInputs = [ pkgs.makeWrapper ];
-            }
-            ''
-              mkdir -p $out/bin
-              ln -s ${pkgs.nixUnstable}/bin/nix $out/bin/nixUnstable
-            '';
-
           julia-wrapped = mur.mkJuliaWrapper {
             # TODO BIG BUG stale version is run because doesn't precompile.
             # pretty sure problem is mtime.n
@@ -57,7 +48,7 @@
             instantiate = true;
             activeProject = ./.;
 
-            extraPackages = with pkgs; [ nix nixUnstable nix-prefetch nix-prefetch-docker nixpkgs-fmt nixfmt ];
+            extraPackages = with pkgs; [ nix nix-prefetch nix-prefetch-docker nixpkgs-fmt nixfmt ];
           };
 
           nix-sourcerer = dev.writeShellScriptBin "nix-sourcerer" { } ''
@@ -70,7 +61,7 @@
         in
         rec {
           legacyPackages = {
-            inherit julia-wrapped nix-sourcerer run-test;
+            inherit pkgs julia-wrapped nix-sourcerer run-test;
           };
 
           defaultApp = apps."nix-sourcerer";
