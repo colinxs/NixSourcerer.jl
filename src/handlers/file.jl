@@ -1,7 +1,6 @@
 const FILE_SCHEMA = SchemaSet(
     SimpleSchema("url", String, true), 
     SimpleSchema("variables", Dict, false),
-    SimpleSchema("builtin", Bool, false),
     SimpleSchema("extraArgs", Dict, false),
 )
 

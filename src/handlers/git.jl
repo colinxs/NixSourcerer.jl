@@ -5,7 +5,6 @@ const GIT_SCHEMA = SchemaSet(
     ExclusiveSchema(("rev", "branch", "tag", "latest_semver_tag"), (String, String, String, Bool), true),
     SimpleSchema("submodule", Bool, false),
     SimpleSchema("variables", Dict, false),
-    SimpleSchema("builtin", Bool, false),
     SimpleSchema("extraArgs", Dict, false),
 )
 

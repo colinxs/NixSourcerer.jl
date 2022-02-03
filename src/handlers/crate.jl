@@ -1,7 +1,6 @@
 const CRATE_SCHEMA = SchemaSet(
     SimpleSchema("pname", String, true),
     SimpleSchema("version", String, true),
-    SimpleSchema("builtin", Bool, false),
     SimpleSchema("extraArgs", Dict, false),
 )
 

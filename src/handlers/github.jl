@@ -15,7 +15,6 @@ const GITHUB_SCHEMA = SchemaSet(
     ),
     DependentSchema("assets", Union{Bool,Vector{String}}, ("release",), (String,), false),
     SimpleSchema("submodule", Bool, false),
-    SimpleSchema("builtin", Bool, false),
     SimpleSchema("extraArgs", Dict, false),
 )
 
