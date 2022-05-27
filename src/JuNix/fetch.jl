@@ -1,5 +1,5 @@
 function select_registry_fetchers(opts::Options)
-    tofetch = Dict{RegistryInfo,Vector{Fetcher}}()
+    tofetch = Dict{RegistrySpec,Vector{Fetcher}}()
     pkg_server_urls = Pkg.Types.pkg_server_registry_urls()
     for reg in collect_registries()
         fetchers = tofetch[reg] = Fetcher[]

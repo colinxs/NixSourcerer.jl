@@ -9,7 +9,12 @@ module JuNix
 
 using Pkg
 using Pkg: pkg_server
-using Pkg.Types: Context, RegistrySpec, VersionNumber
+using Pkg.Types: Context, VersionNumber
+@static if VERSION >= v"1.7" 
+    using Pkg.Registry: RegistrySpec
+else 
+    using Pkg.Types: RegistrySpec
+end
 using Pkg.MiniProgressBars
 using TOML
 using HTTP
@@ -121,7 +126,7 @@ function load_packages(ctx::Context)
 end
 
 function generate_depot(
-    registry_fetchers::Dict{RegistryInfo,FetcherResult},
+    registry_fetchers::Dict{RegistrySpec,FetcherResult},
     pkg_fetchers::Dict{PackageInfo,FetcherResult},
     artifact_fetchers::Dict{ArtifactInfo,FetcherResult},
 )
