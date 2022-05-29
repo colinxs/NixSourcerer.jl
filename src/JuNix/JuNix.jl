@@ -9,7 +9,8 @@ module JuNix
 
 using Pkg
 using Pkg: pkg_server
-using Pkg.Types: Context, RegistrySpec, VersionNumber
+using Pkg.Types: Context, VersionNumber
+using Pkg.Registry: RegistrySpec 
 using Pkg.MiniProgressBars
 using TOML
 using HTTP
