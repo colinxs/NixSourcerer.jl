@@ -8,7 +8,7 @@
   
   inputs.flake-compat.follows = "nix-home/flake-compat";
 
-  outputs = { self, flake-utils, nix-home, ... }@inputs:
+  outputs = { self, nix-home, nixpkgs, flake-utils, ... }@inputs:
     let
       name = "NixSourcerer";
       outputs = { };
@@ -26,6 +26,13 @@
             package = mur.julia-bin-latest;
             wrapper = {
               program = "julia";
+              extraPackages = with pkgs; [
+                nix
+                nixpkgs-fmt
+                nix-prefetch
+              ];
+              # setEnv.NIX_PATH = "nixpkgs=${(builtins.getFlake (toString ./.).
+              setEnv.NIX_PATH = "nixpkgs=${nixpkgs.outPath}";
               args = [ 
                 "--project=${./.}"
                 "--startup-file=no"
