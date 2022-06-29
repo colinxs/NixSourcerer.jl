@@ -22,17 +22,19 @@
           inherit (pkgs) mur;
           inherit (mur) julia buildJuliaApplication;
 
-          julia-wrapped = mur.mkWrapper {
+          julia-wrapped = mur.buildWrapper {
             package = mur.julia-bin-latest;
+            wrapperType = "binary";
             wrapper = {
-              program = "julia";
+              # program = "julia";
               extraPackages = with pkgs; [
                 nix
                 nixpkgs-fmt
                 nix-prefetch
               ];
-              # setEnv.NIX_PATH = "nixpkgs=${(builtins.getFlake (toString ./.).
-              setEnv.NIX_PATH = "nixpkgs=${nixpkgs.outPath}";
+              env = {
+                set.NIX_PATH = "nixpkgs=${nixpkgs.outPath}";
+              };
               args = [ 
                 "--project=${./.}"
                 "--startup-file=no"
