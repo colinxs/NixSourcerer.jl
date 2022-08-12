@@ -24,12 +24,12 @@
 
           julia-wrapped = mur.buildWrapper {
             package = mur.julia-bin-latest;
-            wrapperType = "binary";
+            wrapperType = "shell";
             wrapper = {
               # program = "julia";
               extraPackages = with pkgs; [
                 nix
-                nixpkgs-fmt
+                alejandra
                 nix-prefetch
               ];
               env = {
@@ -72,7 +72,7 @@
               julia-wrapped
               nix
               nix-prefetch
-              nixpkgs-fmt
+              alejandra
               cacert # Needed for network access
             ];
           };

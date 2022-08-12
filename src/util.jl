@@ -34,12 +34,12 @@ function get_cargosha256(pkg)
     # Not sure what exactly to override here..
     # See: https://github.com/Mic92/nix-update/issues/55
     expr = "{ sha256 }: $(pkg).cargoDeps.overrideAttrs (_: { inherit sha256; cargoSha256 = sha256; outputHash = sha256; })"
-    return get_sha256(expr)
+    return get_sha256_expr(expr)
 end
 
 function get_yarnsha256(pkg)
     expr = "{ sha256 }: $(pkg).yarnDeps.overrideAttrs (_: { inherit sha256; yarnSha256 = sha256; outputHash = sha256; })"
-    return get_sha256(expr)
+    return get_sha256_expr(expr)
 end
 
 # TODO may actually want to use <nixpkgs>

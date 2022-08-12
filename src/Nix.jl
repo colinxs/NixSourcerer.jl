@@ -67,9 +67,9 @@ function print(io::IO, xs::Union{AbstractVector,Tuple})
 end
 
 nixfmt(io::IO, x) = _format(io, x, `nixfmt`)
-function nixpkgs_fmt(io::IO, x)
+function format(io::IO, x)
     # needs to be formatted twice to be idempotent? 
-    return _format(io, x, pipeline(`nixpkgs-fmt`, `nixpkgs-fmt`))
+    return _format(io, x, pipeline(`alejandra --quiet --threads 1`))
 end
 function _format(io::IO, x, formatter::Base.AbstractCmd)
     open(formatter, "w", io) do stdin

@@ -160,8 +160,8 @@
         "nixpkgs-unstable": "nixpkgs-unstable"
       },
       "locked": {
-        "lastModified": 1660266790,
-        "narHash": "sha256-MAsngHcBL+mkS2sZmfQ9HAg6xoP1nxUdl79IqtFcBus=",
+        "lastModified": 1660275747,
+        "narHash": "sha256-mq0XLySTNVMj4PmFIKH5TnJqQwU1YEPNu6vOoJn86EE=",
         "path": "/home/colinxs/nix-home",
         "type": "path"
       },
