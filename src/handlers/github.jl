@@ -80,9 +80,9 @@ function github_get_release(owner, repo, release, assets, builtin, extraArgs)
     # if builtin && get(ENV, "GITHUB_TOKEN", nothing) !== nothing
     #     nixsourcerer_error("Cannot use builtin fetcher for assets when GITHUB_TOKEN is provided")
     # end
-    if builtin
+    #= if builtin
         nixsourcerer_error("Cannot use builtin fetcher for GitHub assets")
-    end
+    end =#
 
     rel = github_api_get(owner, repo, "releases/$release")
 
