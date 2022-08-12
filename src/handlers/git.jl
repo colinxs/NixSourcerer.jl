@@ -10,7 +10,7 @@ const GIT_SCHEMA = SchemaSet(
 
 function git_handler(name, spec)
     # NOTE pkgs.fetchgit appears to be faster because shallow clone
-    builtin = get(spec, "builtin", false)
+    builtin = get(spec, "builtin", true)
     submodule = get(spec, "submodule", false)
     variables = get(spec, "variables", Dict())
     url = replace_variables(spec["url"], variables) 

@@ -20,7 +20,7 @@ const GITHUB_SCHEMA = SchemaSet(
 
 # TODO add test for asset handling
 function github_handler(name::AbstractString, spec::AbstractDict)
-    builtin = get(spec, "builtin", false)
+    builtin = get(spec, "builtin", true)
     submodule = get(spec, "submodule", false)
     owner = spec["owner"]
     repo = spec["repo"]

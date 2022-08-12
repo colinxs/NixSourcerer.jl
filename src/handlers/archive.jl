@@ -5,7 +5,7 @@ const ARCHIVE_SCHEMA = SchemaSet(
 )
 
 function archive_handler(name::AbstractString, spec::AbstractDict)
-    builtin = get(spec, "builtin", false)
+    builtin = get(spec, "builtin", true)
     variables = get(spec, "variables", Dict())
     url = replace_variables(spec["url"], variables)
     meta = Dict("variables" => variables)

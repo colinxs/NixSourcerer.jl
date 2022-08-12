@@ -52,7 +52,6 @@ include("handlers/file.jl")
 include("handlers/archive.jl")
 include("handlers/crate.jl")
 include("handlers/docker.jl")
-include("handlers/snap.jl")
 
 include("update.jl")
 include("test.jl")
@@ -67,7 +66,6 @@ const SCHEMAS = Dict(
     "crate" => CRATE_SCHEMA,
     "git" => GIT_SCHEMA,
     "docker" => DOCKER_SCHEMA,
-    "snap" => SNAP_SCHEMA
 )
 
 const HANDLERS = Dict(
@@ -77,7 +75,6 @@ const HANDLERS = Dict(
     "crate" => crate_handler,
     "git" => git_handler,
     "docker" => docker_handler,
-    "snap" => snap_handler
 )
 
 const DEFAULT_NIX = joinpath(@__DIR__, "../../default.nix")
