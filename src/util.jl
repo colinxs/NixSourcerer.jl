@@ -1,18 +1,26 @@
-function get_sha256(args::Vector{String}=String[])
-    args = append!(["--hash-algo", "sha256", "--output", "raw"], args)
-    hash = strip(run_suppress(`nix-prefetch $args`, out=true))
-    return Hash(strip(run_suppress(`nix hash to-sri --type sha256 $hash`, out=true)))
+function nix_flake_prefetch(url::String)
+    return Hash(strip(run_suppress(`nix flake prefetch --json $url`, out=true)))
 end
 
-function get_sha256_expr(expr::String, args::Vector{String}=String[]) 
+function get_sha256(args::Vector{String}=String[]; sri=true)
+    args = append!(["--hash-algo", "sha256", "--output", "raw"], args)
+    hash = strip(run_suppress(`nix-prefetch $args`, out=true))
+    if sri
+        return Hash(strip(run_suppress(`nix hash to-sri --type sha256 $hash`, out=true)))
+    else
+        return hash
+    end
+end
+
+function get_sha256_expr(expr::String, args::Vector{String}=String[]; sri=true) 
     expr = """
            with (import <nixpkgs> { });
            $expr
            """
-    return get_sha256(append!([expr], args)) 
+    return get_sha256(append!([expr], args); sri) 
 end
 
-function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,<:Any})
+function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,<:Any}; sri=true)
     if startswith(fetcher_name, "builtins")
         # builtins don't produce a derivation and so can't be fetched as expressions
         args = [fetcher_name, "--output", "raw"]
@@ -23,10 +31,10 @@ function get_sha256(fetcher_name::String, fetcher_args::Dict{Symbol,<:Any})
             push!(args, "--$(k)")
             push!(args, string(v))
         end
-        return get_sha256(args)
+        return get_sha256(args; sri)
     else
         expr = "$fetcher_name $(Nix.print(fetcher_args))"
-        return get_sha256_expr(expr) 
+        return get_sha256_expr(expr; sri) 
     end
 end
 

@@ -4,7 +4,7 @@
 #
 
 const ARCHIVE_MIME_TYPES = (
-    "application/x-xz", "application/gzip", "application/x-bzip2", "application/x-bzip", "application/zip", "application/x-7z-compressed"
+    "application/zstd", "application/x-xz", "application/gzip", "application/x-bzip2", "application/x-bzip", "application/zip", "application/x-7z-compressed"
 )
 
 const GITHUB_SCHEMA = SchemaSet(
@@ -114,7 +114,7 @@ function github_get_release(owner, repo, release, assets, builtin, extraArgs)
     # https://$TOKEN:@api.github.com/repos/$REPO/releases/assets/$asset_id \
     # -O $2
 
-    fetcher_args = Dict{Symbol,Any}(:curlOpts => "-L --header Accept:application/octet-stream")
+    fetcher_args = Dict{Symbol,Any}()
     for (k, v) in extraArgs
         fetcher_args[Symbol(k)] = v
     end
@@ -125,18 +125,30 @@ function github_get_release(owner, repo, release, assets, builtin, extraArgs)
         fetcher_args = copy(fetcher_args)
         fetcher_args[:url] = info["browser_download_url"]
         if info["content_type"] in ARCHIVE_MIME_TYPES 
-            fetcher_name = "pkgs.fetchzip"
             hash = try
+                if builtin 
+                    fetcher_name = "builtins.fetchTarball" 
+                    fetcher_args[:curlOpts] = "-L --header Accept:application/gzip,application/octet-stream"
+                else
+                    fetcher_name = "pkgs.fetchzip"
+                end
                 get_sha256(fetcher_name, fetcher_args)
             catch
+                fetcher_name = "pkgs.fetchzip"
+                fetcher_args[:curlOpts] = "-L --header Accept:application/gzip,application/octet-stream"
                 fetcher_args[:stripRoot] = false
                 get_sha256(fetcher_name, fetcher_args)
             end
             version = version_string(hash)
             fetcher_args[:hash] = string(hash) 
         else
-            fetcher_name = "pkgs.fetchurl"
-            fetcher_args[:hash] = string(get_sha256(fetcher_name, fetcher_args))
+            if builtin 
+                fetcher_name = "builtins.fetchurl" 
+                fetcher_args[:sha256] = string(get_sha256(fetcher_name, fetcher_args, sri=false))
+            else
+                fetcher_name = "pkgs.fetchurl";
+                fetcher_args[:hash] = string(get_sha256(fetcher_name, fetcher_args, sri=true))
+            end
         end
 
         fetcher = Fetcher(fetcher_name, fetcher_args)
