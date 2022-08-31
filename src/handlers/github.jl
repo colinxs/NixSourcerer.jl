@@ -53,7 +53,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
     source_name = sanitize_name(get(spec, "name", git_short_rev(rev)))
     if submodule
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)..., "submodule", "builtin")
-        new_spec["name"] = source_name 
+        #= new_spec["name"] = source_name  =#
         new_spec["url"] = url
         new_spec["rev"] = rev
         new_spec["extraArgs"] = extraArgs
@@ -62,7 +62,7 @@ function github_handler(name::AbstractString, spec::AbstractDict)
         return source
     else
         new_spec = subset(spec, keys(DEFAULT_SCHEMA_SET)...)
-        new_spec["name"] = source_name 
+        #= new_spec["name"] = source_name  =#
         new_spec["url"] = "https://github.com/$(owner)/$(repo)/archive/$(rev).tar.gz"
         new_spec["extraArgs"] = extraArgs
         source = archive_handler(name, new_spec)

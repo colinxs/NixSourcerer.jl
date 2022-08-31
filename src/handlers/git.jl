@@ -44,7 +44,7 @@ function git_handler(name, spec)
     meta["rev"] = rev
 
     fetcher_args = Dict{Symbol,Any}(Symbol(k) => v for (k,v) in extraArgs)
-    fetcher_args[:name] = sanitize_name(get(spec, "name", git_short_rev(rev)))
+    #= fetcher_args[:name] = sanitize_name(get(spec, "name", git_short_rev(rev))) =#
     fetcher_args[:url] = url 
     fetcher_args[:rev] = rev
     if builtin

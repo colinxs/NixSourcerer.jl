@@ -13,7 +13,7 @@ function file_handler(name::AbstractString, spec::AbstractDict)
 
     fetcher_name = builtin ? "builtins.fetchurl" : "pkgs.fetchurl"
     fetcher_args = Dict{Symbol,Any}(Symbol(k) => v for (k,v) in extraArgs)
-    fetcher_args[:name] = sanitize_name(get(spec, "name", url_name(spec["url"])))
+    #= fetcher_args[:name] = sanitize_name(get(spec, "name", url_name(spec["url"]))) =#
     fetcher_args[:url] = url 
     
     hash = get_sha256(fetcher_name, fetcher_args)
